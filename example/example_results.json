@@ -1,0 +1,499 @@
+[
+  {
+    "file": "D:\\project6\\wtfe\\example\\8bit_marshmallow.py",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\8bit_marshmallow.py",
+      "filename": "8bit_marshmallow.py",
+      "language": "python",
+      "structures": {
+        "classes": [
+          "WatermelonPig",
+          "SonnetServer"
+        ],
+        "functions": [
+          "bake_kernel",
+          "compute_os_poem_hash",
+          "literary_food_analysis",
+          "system_patch_for_soup",
+          "main",
+          "__init__",
+          "oink_watermelon",
+          "__init__",
+          "serve_sonnet"
+        ],
+        "globals": [
+          "baked",
+          "timestamp",
+          "wp",
+          "server",
+          "kernel_info",
+          "poem",
+          "samples",
+          "freq",
+          "fragments",
+          "w"
+        ]
+      },
+      "signals": {
+        "imports": [
+          "__future__",
+          "random",
+          "datetime",
+          "typing"
+        ],
+        "network": [],
+        "io": [],
+        "entry_point": true
+      },
+      "roles": [
+        "entry_point"
+      ],
+      "evidence": [],
+      "confidence": 1.0
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\clockwork_chrysalis.py",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\clockwork_chrysalis.py",
+      "filename": "clockwork_chrysalis.py",
+      "language": "python",
+      "structures": {
+        "classes": [
+          "ButterflyVault",
+          "EchoSmith"
+        ],
+        "functions": [
+          "hatch_batch",
+          "compass_recipe",
+          "quilt_inspect",
+          "main",
+          "__init__",
+          "whisper",
+          "sigh",
+          "nestle",
+          "hush",
+          "record",
+          "peek_metrics",
+          "__init__",
+          "run",
+          "forge_attempt",
+          "make_flaky",
+          "inner"
+        ],
+        "globals": [
+          "rnd",
+          "vault",
+          "tasks",
+          "inspector",
+          "avg",
+          "attempt",
+          "start",
+          "elapsed",
+          "kind",
+          "m",
+          "w",
+          "attempts",
+          "total_time",
+          "successes",
+          "failures",
+          "item",
+          "ln",
+          "res",
+          "elapsed",
+          "wait"
+        ]
+      },
+      "signals": {
+        "imports": [
+          "threading",
+          "queue",
+          "time",
+          "random",
+          "logging",
+          "typing"
+        ],
+        "network": [],
+        "io": [],
+        "entry_point": true
+      },
+      "roles": [
+        "entry_point"
+      ],
+      "evidence": [],
+      "confidence": 1.0
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\docker-compose.yml",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\docker-compose.yml",
+      "filename": "docker-compose.yml",
+      "language": "yaml",
+      "structures": {
+        "top": "dict"
+      },
+      "signals": {
+        "keys": [
+          "version",
+          "services"
+        ],
+        "looks_like_k8s": false,
+        "looks_like_compose": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\Dockerfile",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\Dockerfile",
+      "filename": "Dockerfile",
+      "language": "dockerfile",
+      "structures": {
+        "from": [
+          "python:3.10-slim"
+        ],
+        "expose": [
+          "8080"
+        ]
+      },
+      "signals": {
+        "has_entrypoint": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.html",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.html",
+      "filename": "example.html",
+      "language": "html",
+      "structures": {
+        "tags": [
+          "body",
+          "button",
+          "form",
+          "h1",
+          "head",
+          "html",
+          "input",
+          "meta",
+          "script",
+          "title"
+        ],
+        "script_blocks": 1,
+        "forms": 1
+      },
+      "signals": {
+        "client_logic": true,
+        "user_input": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.ipynb",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.ipynb",
+      "filename": "example.ipynb",
+      "language": "notebook",
+      "structures": {
+        "code_cells": 1,
+        "markdown_cells": 0
+      },
+      "signals": {
+        "is_reproducible": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.java",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.java",
+      "filename": "example.java",
+      "language": "java",
+      "structures": {
+        "classes": [
+          "example"
+        ],
+        "methods": []
+      },
+      "signals": {
+        "imports": [],
+        "entry_point": true
+      },
+      "roles": [
+        "entry_point"
+      ],
+      "evidence": [],
+      "confidence": 0.8
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.js",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.js",
+      "filename": "example.js",
+      "language": "javascript",
+      "structures": {
+        "imports": [
+          "fs"
+        ],
+        "functions": [
+          "helper"
+        ],
+        "classes": []
+      },
+      "signals": {
+        "commonjs": true,
+        "esm": false,
+        "express": false,
+        "react": false
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.6
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.json",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.json",
+      "filename": "example.json",
+      "language": "json",
+      "structures": {
+        "top": "dict"
+      },
+      "signals": {
+        "keys": [
+          "name",
+          "version",
+          "scripts",
+          "dependencies"
+        ],
+        "is_package_json": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.jsx",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.jsx",
+      "filename": "example.jsx",
+      "language": "javascript",
+      "structures": {
+        "imports": [
+          "react"
+        ],
+        "functions": [
+          "ExampleComponent"
+        ],
+        "classes": []
+      },
+      "signals": {
+        "commonjs": false,
+        "esm": true,
+        "express": false,
+        "react": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.6
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.md",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.md",
+      "filename": "example.md",
+      "language": "markdown",
+      "structures": {
+        "headings": [
+          "Example Project",
+          "Usage",
+          "Notes"
+        ],
+        "code_block_count": 2
+      },
+      "signals": {
+        "has_install_steps": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.py",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.py",
+      "filename": "example.py",
+      "language": "python",
+      "structures": {
+        "classes": [
+          "Greeter"
+        ],
+        "functions": [
+          "add",
+          "main",
+          "__init__",
+          "greet"
+        ],
+        "globals": [
+          "greeter"
+        ]
+      },
+      "signals": {
+        "imports": [
+          "__future__"
+        ],
+        "network": [],
+        "io": [],
+        "entry_point": true
+      },
+      "roles": [
+        "entry_point"
+      ],
+      "evidence": [],
+      "confidence": 1.0
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.ts",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.ts",
+      "filename": "example.ts",
+      "language": "typescript",
+      "structures": {
+        "imports": []
+      },
+      "signals": {
+        "typescript": true,
+        "jsx": false
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example.tsx",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example.tsx",
+      "filename": "example.tsx",
+      "language": "typescript",
+      "structures": {
+        "imports": [
+          "react"
+        ]
+      },
+      "signals": {
+        "typescript": true,
+        "jsx": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\example_results.json",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\example_results.json",
+      "filename": "example_results.json",
+      "language": "json",
+      "structures": {
+        "top": "list"
+      },
+      "signals": {},
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\k8s_deployment.yaml",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\k8s_deployment.yaml",
+      "filename": "k8s_deployment.yaml",
+      "language": "yaml",
+      "structures": {
+        "top": "dict"
+      },
+      "signals": {
+        "keys": [
+          "apiVersion",
+          "kind",
+          "metadata",
+          "spec"
+        ],
+        "looks_like_k8s": true,
+        "looks_like_compose": false
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  },
+  {
+    "file": "D:\\project6\\wtfe\\example\\Makefile",
+    "result": {
+      "path": "D:\\project6\\wtfe\\example\\Makefile",
+      "filename": "Makefile",
+      "language": "makefile",
+      "structures": {
+        "targets": [
+          "all",
+          "build",
+          "run"
+        ]
+      },
+      "signals": {
+        "has_default_target": true
+      },
+      "roles": [
+        "unknown"
+      ],
+      "evidence": [],
+      "confidence": 0.5
+    }
+  }
+]
