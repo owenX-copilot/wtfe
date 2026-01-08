@@ -131,6 +131,34 @@ class RunConfig:
 
 
 @dataclass
+class AuthorIntent:
+    """Author's explicit documentation and intent signals."""
+    # README files at different levels
+    project_readme: Optional[str] = None  # Root README content
+    module_readmes: Dict[str, str] = field(default_factory=dict)  # path -> content
+    
+    # Other documentation
+    changelog: Optional[str] = None
+    contributing: Optional[str] = None
+    license_text: Optional[str] = None
+    
+    # Metadata from package files
+    package_metadata: Dict[str, Any] = field(default_factory=dict)
+    # From setup.py, package.json, Cargo.toml, etc.
+    
+    def to_dict(self) -> Dict:
+        """Convert to JSON-serializable dict."""
+        return {
+            "project_readme": self.project_readme,
+            "module_readmes": self.module_readmes,
+            "changelog": self.changelog,
+            "contributing": self.contributing,
+            "license_text": self.license_text,
+            "package_metadata": self.package_metadata
+        }
+
+
+@dataclass
 class ProjectContext:
     """Project-level metadata and maturity signals."""
     root_path: str

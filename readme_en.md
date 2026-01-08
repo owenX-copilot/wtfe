@@ -1,169 +1,201 @@
 # WTFE — Why The Folder Exists
 
-WTFE is an analysis toolchain for automatically making sense of unfamiliar code and system structure.
+**Automatically analyze unfamiliar code projects and generate README documentation.**
 
-Its goal is not to "understand all code," but to answer, with minimal context and human intervention (and even without AI), a recurring engineering question that seldom has a systematic answer:
+Facing an unknown project and don't know what it does or how to run it? WTFE extracts project structure and capabilities through static analysis, then uses AI to generate human-friendly documentation.
 
-> "What does this piece of code / this file / this folder / this process actually do?"
-
----
-
-## Vision
-
-In real projects we often encounter:
-
-- filenames that badly mismatch their contents
-- highly abstract, poetic, or intentionally confusing naming
-- missing or out-of-date READMEs
-- incidents where you only have a `pid` / `port` / `service name`
-- AI-generated code that runs but nobody knows what it does
-
-WTFE aims to build an automated path from observed system facts to understandable descriptions.
-
----
-
-## Core Principles
-
-WTFE does not start from semantic understanding; it uses a layered, incremental, and verifiable analysis model:
-
-### 1) Fact-first
-
-- code structure
-- language features
-- imported libraries
-- concurrency / IO / networking signals
-- process and port relationships
-
-Conclusions must be derivable from static or runtime facts.
-
----
-
-### 2) Rules before AI
-
-AI is not a prerequisite for WTFE.
-
-Baseline capabilities should work without calling any AI, including:
-
-- file structure extraction
-- responsibility signal detection
-- suspicious complexity tagging
-- project-level partitioning
-
-AI is optional and best suited as a final summarization or expression layer.
-
----
-
-### 3) Bottom-up aggregation
-
-WTFE analyzes at layers rather than jumping straight to "project":
-
-File → Folder → Project → Runtime / Service
-
-Each layer yields independent, reusable, and runnable analysis artifacts.
-
----
-
-## Logical Modules
-
-WTFE is an analysis framework rather than a single tool. Typical submodules include:
-
-### `wtfe-file`
-Single-file analyzer
-
-- Input: a source file
-- Output: a structured "file fact" description
-- No project context required
-- Language-extensible (Python / Java / JS / Go / Rust …)
-
-Key question: *Why does this file exist?*
-
----
-
-### `wtfe-folder`
-Folder-level aggregation
-
-- aggregate file analyses
-- infer module responsibilities
-- identify utility code / core logic / experimental scraps
-- ignore .gitignored and noisy build outputs
-
-Key question: *Why does this folder exist?*
-
----
-
-### `wtfe-project`
-Project-level understanding
-
-- identify project type (service / library / tool / hybrid)
-- infer tech stack and runtime patterns
-- produce a project-level description (README draft)
-
-Key question: *What kind of project is this?*
-
----
-
-### `wtfe-runtime` (planned)
-Runtime reverse-mapping
-
-- Input: `pid` / `port` / `service name`
-- locate the executable
-- infer the project root
-- combine with static analysis to reconstruct service structure
-
-Key question: *What is actually running and where did it come from?*
-
----
-
-## Outputs
-
-All WTFE intermediate results are machine-readable JSON artifacts, for example:
-
-- file structure descriptions
-- signal and feature summaries
-- aggregated statistics
-
-These artifacts can be:
-
-- read by humans
-- summarized by AI
-- consumed by CI / ops systems
-- fed into documentation generators
-
----
-
-## Relationship with AI
-
-WTFE does not depend on AI, but it pairs naturally with it:
-
-- WTFE handles denoising, trimming, and structuring
-- AI handles summarization and expression
-
-This reduces prompt size, context overflow risk, API costs, and hallucination.
-
----
-
-## What WTFE does not do
-
-- ❌ it does not guarantee business-level semantic correctness
-- ❌ it does not replace manual code review
-- ❌ it does not perform security vulnerability scanning
-- ❌ it does not attempt to read the author's mind
-
-WTFE focuses on engineering reality rather than author intent.
-
----
-
-## Who benefits
-
-- developers facing large volumes of unfamiliar code
-- operators / SREs / systems engineers
-- researchers in explainability for AI-generated code
-- anyone needing a quick judgment about whether a code area is worth deeper inspection
-
----
-
-## One-line summary
-
-> WTFE is an engineering approach for extracting the "reason this code exists" from chaos.
-
-It does not promise instant comprehension, but it prevents you from staring at a set of files and not knowing where to start.
+## Quick Start
+
+### Complete Workflow: Generate README
+
+```bash
+# 1. Set API Key (SiliconFlow recommended for Chinese users)
+export WTFE_API_KEY="sk-your-api-key"  # Linux/Mac
+$env:WTFE_API_KEY = "sk-your-api-key"  # Windows PowerShell
+
+# 2. One-command README generation
+python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
+
+# Or execute in two steps
+python wtfe-analyze/wtfe_analyze.py ./your-project > analysis.json
+python wtfe-readme/wtfe_readme.py analysis.json
+```
+
+### Test Individual Modules
+
+```bash
+# Clone repository
+git clone https://github.com/owenX-copilot/wtfe.git
+cd wtfe
+
+# Single file analysis
+python wtfe-file/wtfe_file.py example/app.py
+
+# Folder analysis
+python wtfe-folder/wtfe_folder.py example/example_folder
+
+# Entry point detection
+python wtfe-run/wtfe_run.py example/example_folder
+
+# Context analysis
+python wtfe-context/wtfe_context.py example/example_folder
+
+# Full project analysis (outputs JSON)
+python wtfe-analyze/wtfe_analyze.py example/example_folder
+```
+
+## Modules
+
+| Module | Function | Status |
+|--------|----------|--------|
+| **wtfe-file** | Single file analysis, supports 11 file types (Python/JS/TS/Java, etc.) | ✅ |
+| **wtfe-folder** | Recursive folder analysis, identifies core files and module responsibilities | ✅ |
+| **wtfe-run** | Detects entry points (main/Makefile/Dockerfile/npm scripts) | ✅ |
+| **wtfe-context** | Collects 40+ project signals (scale/maturity/tech stack) | ✅ |
+| **wtfe-intent** | Extracts existing README/LICENSE/CHANGELOG (author intent) | ✅ |
+| **wtfe-analyze** | Orchestrates all modules, outputs structured JSON | ✅ |
+| **wtfe-readme** | AI-generated natural language README | ✅ |
+
+## Configuration
+
+### wtfe-readme Configuration (config.yaml)
+
+```yaml
+# API Provider (supports OpenAI-compatible format)
+provider: openai
+base_url: https://api.siliconflow.cn/v1  # SiliconFlow (recommended for China)
+# base_url: https://api.openai.com/v1   # OpenAI official
+# base_url: http://localhost:11434/v1   # Ollama local model
+
+# API Key (read from environment variable)
+api_key: ${WTFE_API_KEY}
+
+# Model selection
+model: deepseek-ai/DeepSeek-V3.2  # Default, cost-effective ($0.27/M tokens)
+# model: gpt-4o-mini                # OpenAI
+# model: llama3.1:8b                # Ollama local
+
+# Generation parameters
+max_tokens: 4096
+temperature: 0.7
+language: en  # zh-cn | en
+```
+
+### Supported AI Services
+
+- **SiliconFlow (Recommended for CN)**: Domestic access, low cost, no VPN required
+- **OpenAI Official**: GPT-4o / GPT-4o-mini / GPT-3.5-turbo
+- **Local Models**: Ollama / vLLM / LM Studio
+
+## How It Works
+
+### Analysis Pipeline
+
+```
+┌─────────────┐
+│ Source Code │
+└──────┬──────┘
+       │
+       ├──→ wtfe-file    (file feature extraction)
+       ├──→ wtfe-folder  (module structure analysis)
+       ├──→ wtfe-run     (entry point detection)
+       ├──→ wtfe-context (project signal collection)
+       └──→ wtfe-intent  (existing docs extraction)
+       │
+       ↓
+┌──────────────┐
+│ wtfe-analyze │ Orchestrate, generate JSON
+└──────┬───────┘
+       │
+       ↓
+┌──────────────┐
+│ wtfe-readme  │ AI converts to natural language
+└──────┬───────┘
+       │
+       ↓
+  README.md
+```
+
+### Design Principles
+
+1. **Rules First, AI Assists**: File analysis and structure extraction use rules; AI only handles final language generation
+2. **Author Intent First**: If project has existing README, use it as highest-weight reference
+3. **Zero-dependency Analysis**: Pure static analysis, no code execution
+4. **Incremental & Cacheable**: Reuse analysis results for unchanged files
+
+## Example Output
+
+### Analysis Result (JSON)
+
+```json
+{
+  "metadata": {
+    "project_name": "example_folder",
+    "analysis_timestamp": "2026-01-08T20:40:24"
+  },
+  "folder_analysis": {
+    "files": ["main.py", "app.py", "models.py", ...],
+    "core_files": ["main.py"],
+    "primary_role": "entry_point",
+    "capabilities": ["has_network", "has_database", "has_tests"]
+  },
+  "entry_points": [
+    {"file": "main.py", "type": "main", "command": "python main.py"}
+  ],
+  "context_signals": {
+    "scale": {"file_count": 9, "line_count": 369},
+    "maturity": {"has_tests": true, "has_ci": false}
+  },
+  "author_intent": {
+    "project_readme": "# Flask Blog API\n\n..."
+  }
+}
+```
+
+### Generated README
+
+Based on the above JSON, AI generates a README containing:
+- Project introduction
+- Features
+- Tech stack
+- Installation & running instructions
+- Usage examples
+- Testing instructions
+
+## Project Structure
+
+```
+wtfe/
+├── core/models.py           # Data structure definitions
+├── wtfe-file/               # Single file analysis
+├── wtfe-folder/             # Folder aggregation
+├── wtfe-run/                # Entry point detection
+├── wtfe-context/            # Context signals
+├── wtfe-intent/             # Author intent extraction
+├── wtfe-analyze/            # Orchestrator
+├── wtfe-readme/             # AI generation layer
+│   ├── providers/           # AI service abstraction
+│   ├── templates/prompt.py  # Prompt templates
+│   ├── config.yaml          # Configuration file
+│   └── wtfe_readme.py       # Main program
+└── example/                 # Test examples
+```
+
+## Use Cases
+
+- Quickly understand open source projects
+- Add documentation to legacy projects
+- Analyze legacy codebases
+- Evaluate project quality
+- Assist code reviews
+
+## Limitations
+
+- Static analysis only, no code execution
+- Does not understand business logic
+- Generated README requires human review
+- AI cost depends on project size (small projects < $0.01)
+
+## License
+
+MIT
