@@ -1,67 +1,22 @@
-# WTFE README Generator Configuration
-# 配置文件说明：修改此文件即可切换AI服务商、模型、参数等
-
-# ===== API Provider Configuration =====
-# 服务商配置
-provider: openai  # 目前支持: openai (兼容OpenAI格式的所有服务)
-
-# API Endpoint
-# 硅基流动（默认）: https://api.siliconflow.cn/v1
-# OpenAI官方: https://api.openai.com/v1
-# Azure OpenAI: https://<your-resource>.openai.azure.com/openai/deployments/<deployment-id>
-# Ollama本地: http://localhost:11434/v1
-# vLLM本地: http://localhost:8000/v1
+api_key: your_api_key_here
+backup_existing: true
 base_url: https://api.siliconflow.cn/v1
-
-# API Key
-# 从环境变量读取（推荐）: 设置 WTFE_API_KEY 环境变量
-# 或直接填写（不推荐）: api_key: sk-xxxxxx
-api_key: ${WTFE_API_KEY}  # 从环境变量读取
-
-# ===== Model Configuration =====
-# 模型选择
-# 硅基流动推荐模型:
-#   - deepseek-ai/DeepSeek-V3.2 (性价比高，推理能力强)
-#   - deepseek-ai/DeepSeek-V3.2-Exp (实验版，更新更快)
-#   - Qwen/Qwen2.5-72B-Instruct (阿里通义千问)
-#   - Pro/deepseek-ai/DeepSeek-V3.2-Exp (Pro版本)
-# OpenAI官方:
-#   - gpt-4o (最强)
-#   - gpt-4o-mini (性价比)
-#   - gpt-3.5-turbo (便宜)
-# 本地模型:
-#   - llama3.1:8b (Ollama)
-#   - mistral:latest (Ollama)
+cache_enabled: false
+cache_ttl: 86400
+enable_thinking: false
+include_architecture: true
+include_badges: true
+include_toc: true
+language: zh-cn
+max_tokens: 4096
 model: deepseek-ai/DeepSeek-V3.2
-
-# ===== Generation Parameters =====
-# 生成参数
-max_tokens: 4096          # 最大生成token数（README通常1000-3000足够）
-temperature: 0.7          # 温度（0.0-1.0，越高越随机，建议0.7）
-top_p: 0.9                # 核采样（0.0-1.0，建议0.9）
-stream: false             # 是否流式输出（当前版本暂不支持）
-
-# DeepSeek特有参数（其他模型会忽略）
-enable_thinking: false    # 是否开启思考模式（推荐关闭，README不需要长推理链）
-thinking_budget: 4096     # 思考token预算
-
-# ===== Prompt Configuration =====
-# Prompt配置
-language: zh-cn           # 输出语言: zh-cn | en | auto
-style: technical          # 风格: technical | casual | formal
-include_badges: true      # 是否包含徽章（如技术栈、License等）
-include_toc: true         # 是否包含目录
-include_architecture: true  # 是否包含架构说明
-
-# ===== Output Configuration =====
-# 输出配置
-output_file: README.md    # 输出文件名
-overwrite: false          # 是否覆盖已有README（false会生成README_generated.md）
-backup_existing: true     # 覆盖前是否备份（生成README.md.bak）
-
-# ===== Advanced Settings =====
-# 高级设置
-retry_count: 3            # API调用失败重试次数
-timeout: 60               # API调用超时时间（秒）
-cache_enabled: false      # 是否启用缓存（同一project_path+config hash缓存结果）
-cache_ttl: 86400          # 缓存有效期（秒，默认24小时）
+output_file: README.md
+overwrite: false
+provider: openai
+retry_count: 3
+stream: false
+style: technical
+temperature: 0.7
+thinking_budget: 4096
+timeout: 60
+top_p: 0.9

@@ -9,16 +9,16 @@
 ### 完整流程：生成README
 
 ```bash
-# 1. 设置API Key（推荐使用硅基流动）
-$env:WTFE_API_KEY = "sk-your-api-key"  # Windows PowerShell
-export WTFE_API_KEY="sk-your-api-key"  # Linux/Mac
+# 推荐：使用统一入口（首次运行会自动引导配置API Key）
+python wtfe.py ./your-project
 
-# 2. 一键生成README
+# 传统方式：管道组合
+# 1. 设置环境变量
+# $env:WTFE_API_KEY = "sk-..."  # Windows
+# export WTFE_API_KEY="sk-..."  # Linux/Mac
+
+# 2. 执行分析与生成
 python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
-
-# 或分两步执行
-python wtfe-analyze/wtfe_analyze.py ./your-project > analysis.json
-python wtfe-readme/wtfe_readme.py analysis.json
 ```
 
 ### 测试单个模块
@@ -28,20 +28,15 @@ python wtfe-readme/wtfe_readme.py analysis.json
 git clone https://github.com/owenX-copilot/wtfe.git
 cd wtfe
 
-# 单文件分析
-python wtfe-file/wtfe_file.py example/app.py
+# 使用统一入口调用各模块
+python wtfe.py -m file example/app.py           # 单文件分析
+python wtfe.py -m folder example/example_folder # 文件夹分析
+python wtfe.py -m run example/example_folder    # 入口点检测
+python wtfe.py -m context example/example_folder # 上下文分析
+python wtfe.py -m analyze example/example_folder # 完整分析
 
-# 文件夹分析
-python wtfe-folder/wtfe_folder.py example/example_folder
-
-# 入口点检测
-python wtfe-run/wtfe_run.py example/example_folder
-
-# 上下文分析
-python wtfe-context/wtfe_context.py example/example_folder
-
-# 完整项目分析（输出JSON）
-python wtfe-analyze/wtfe_analyze.py example/example_folder
+# 查看帮助
+python wtfe.py --help
 ```
 
 ## 功能模块

@@ -9,16 +9,16 @@ Facing an unknown project and don't know what it does or how to run it? WTFE ext
 ### Complete Workflow: Generate README
 
 ```bash
-# 1. Set API Key (SiliconFlow recommended for Chinese users)
-export WTFE_API_KEY="sk-your-api-key"  # Linux/Mac
-$env:WTFE_API_KEY = "sk-your-api-key"  # Windows PowerShell
+# Recommended: Use the unified entry point (Interactive API Key setup on first run)
+python wtfe.py ./your-project
 
-# 2. One-command README generation
+# Legacy method: Pipeline
+# 1. Set Environment Variable
+# export WTFE_API_KEY="sk-..."  # Linux/Mac
+# $env:WTFE_API_KEY = "sk-..."  # Windows
+
+# 2. Analyze and Generate
 python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
-
-# Or execute in two steps
-python wtfe-analyze/wtfe_analyze.py ./your-project > analysis.json
-python wtfe-readme/wtfe_readme.py analysis.json
 ```
 
 ### Test Individual Modules
@@ -28,20 +28,15 @@ python wtfe-readme/wtfe_readme.py analysis.json
 git clone https://github.com/owenX-copilot/wtfe.git
 cd wtfe
 
-# Single file analysis
-python wtfe-file/wtfe_file.py example/app.py
+# Use unified entry point to run modules
+python wtfe.py -m file example/app.py           # Single file analysis
+python wtfe.py -m folder example/example_folder # Folder analysis
+python wtfe.py -m run example/example_folder    # Entry point detection
+python wtfe.py -m context example/example_folder # Context analysis
+python wtfe.py -m analyze example/example_folder # Full analysis
 
-# Folder analysis
-python wtfe-folder/wtfe_folder.py example/example_folder
-
-# Entry point detection
-python wtfe-run/wtfe_run.py example/example_folder
-
-# Context analysis
-python wtfe-context/wtfe_context.py example/example_folder
-
-# Full project analysis (outputs JSON)
-python wtfe-analyze/wtfe_analyze.py example/example_folder
+# View Help
+python wtfe.py --help
 ```
 
 ## Modules
