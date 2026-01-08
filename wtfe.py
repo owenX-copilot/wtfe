@@ -65,7 +65,8 @@ def check_api_key():
         with open(config_path, 'r', encoding='utf-8') as f:
             cfg = yaml.safe_load(f)
             key = cfg.get('api_key', '')
-            if key and not key.startswith('$'):
+            # 忽略以$开头的变量引用，以及默认的占位符
+            if key and not key.startswith('$') and 'your_api_key' not in key:
                 os.environ['WTFE_API_KEY'] = key
                 return True
     except: pass

@@ -8,8 +8,13 @@
 
 ### 完整流程：生成README
 
+**前置条件**：
+1. 安装依赖：`pip install -r requirements.txt`
+2. 设置环境变量 `WTFE_API_KEY` 或修改配置文件 `wtfe-readme/config.yaml`（二选一）。
+   *注：如果未配置，程序将在首次运行时自动启动交互式配置向导。*
+
 ```bash
-# 推荐：使用统一入口（首次运行会自动引导配置API Key）
+# 推荐：使用统一入口
 python wtfe.py ./your-project
 
 # 传统方式：管道组合

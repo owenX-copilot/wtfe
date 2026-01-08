@@ -8,8 +8,13 @@ Facing an unknown project and don't know what it does or how to run it? WTFE ext
 
 ### Complete Workflow: Generate README
 
+**Prerequisites**:
+1. Install dependencies: `pip install -r requirements.txt`
+2. Set the `WTFE_API_KEY` environment variable OR modify `wtfe-readme/config.yaml`.
+   *Note: If not configured, an interactive setup wizard will launch on the first run.*
+
 ```bash
-# Recommended: Use the unified entry point (Interactive API Key setup on first run)
+# Recommended: Use the unified entry point
 python wtfe.py ./your-project
 
 # Legacy method: Pipeline

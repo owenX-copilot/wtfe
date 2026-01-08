@@ -38,15 +38,20 @@ class READMEGenerator:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         
-        # 处理环境变量
-        api_key = config.get('api_key', '')
-        if api_key.startswith('${') and api_key.endswith('}'):
-            env_var = api_key[2:-1]
-            api_key = os.environ.get(env_var)
-            if not api_key:
-                raise ValueError(f"Environment variable {env_var} not set. "
-                               f"Please set it or update config.yaml with your API key.")
-            config['api_key'] = api_key
+        # 0. 优先使用环境变量 WTFE_API_KEY
+        if os.environ.get('WTFE_API_KEY'):
+            config['api_key'] = os.environ.get('WTFE_API_KEY')
+        
+        # 1. 再次检查配置文件中的环境变量引用
+        else:
+            api_key = config.get('api_key', '')
+            if api_key.startswith('${') and api_key.endswith('}'):
+                env_var = api_key[2:-1]
+                api_key = os.environ.get(env_var)
+                if not api_key:
+                    raise ValueError(f"Environment variable {env_var} not set. "
+                                   f"Please set it or update config.yaml with your API key.")
+                config['api_key'] = api_key
         
         return config
     
