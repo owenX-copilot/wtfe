@@ -63,3 +63,7 @@ wtfe_api/
 
 # 部署配置文件（不开放源代码）
 deploy/
+
+# docker打包文件 （不开放源代码）
+.dockerignore
+wtfe_api-arm64.tar

@@ -41,7 +41,7 @@ class READMEGenerator:
         # 0. 优先使用环境变量 WTFE_API_KEY
         if os.environ.get('WTFE_API_KEY'):
             config['api_key'] = os.environ.get('WTFE_API_KEY')
-        
+
         # 1. 再次检查配置文件中的环境变量引用
         else:
             api_key = config.get('api_key', '')
@@ -52,6 +52,13 @@ class READMEGenerator:
                     raise ValueError(f"Environment variable {env_var} not set. "
                                    f"Please set it or update config.yaml with your API key.")
                 config['api_key'] = api_key
+
+        # 2. 优先使用环境变量 WTFE_BASE_URL 和 WTFE_MODEL
+        if os.environ.get('WTFE_BASE_URL'):
+            config['base_url'] = os.environ.get('WTFE_BASE_URL')
+
+        if os.environ.get('WTFE_MODEL'):
+            config['model'] = os.environ.get('WTFE_MODEL')
         
         return config
     

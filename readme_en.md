@@ -4,6 +4,8 @@
 
 Facing an unknown project and don't know what it does or how to run it? WTFE extracts project structure and capabilities through static analysis, then uses AI to generate human-friendly documentation.
 
+> 🌐 **Language**: **English** | [中文](README.md)
+
 ## Quick Start
 
 ### Complete Workflow: Generate README
