@@ -1,10 +1,10 @@
-# wtfe-context
+# wtfe_context
 
 **Pipeline C - 项目上下文与成熟度信号采集**
 
 ## 功能
 
-wtfe-context 负责收集项目级的**原始信号**，而不做最终结论。
+wtfe_context 负责收集项目级的**原始信号**，而不做最终结论。
 
 它扫描项目根目录，检测40+种文件存在性信号、统计项目规模、提取依赖列表，将这些**事实性证据**交给后续的AI层进行综合判断。
 
@@ -85,7 +85,7 @@ dependencies: {
 ### 分析项目上下文
 
 ```bash
-python wtfe-context/wtfe_context.py .
+python wtfe_context/wtfe_context.py .
 ```
 
 **输出示例**：
@@ -165,14 +165,14 @@ AI可以综合推断：
 ## 与其他模块的关系
 
 ```
-wtfe-context (收集信号)
+wtfe_context (收集信号)
     ↓
-wtfe-readme (AI综合判断)
+wtfe_readme (AI综合判断)
     ↓
 最终README (自然语言描述)
 ```
 
-wtfe-context不负责"理解"项目，只负责"观测"项目。
+wtfe_context不负责"理解"项目，只负责"观测"项目。
 
 ## 输出数据结构
 

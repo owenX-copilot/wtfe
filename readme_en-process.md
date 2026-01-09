@@ -67,7 +67,7 @@ Each layer yields independent, reusable, and runnable analysis artifacts.
 
 WTFE is an analysis framework rather than a single tool. Typical submodules include:
 
-### `wtfe-file`
+### `wtfe_file`
 Single-file analyzer
 
 - Input: a source file
@@ -79,7 +79,7 @@ Key question: *Why does this file exist?*
 
 ---
 
-### `wtfe-folder`
+### `wtfe_folder`
 Folder-level aggregation
 
 - aggregate file analyses
@@ -91,7 +91,7 @@ Key question: *Why does this folder exist?*
 
 ---
 
-### `wtfe-project`
+### `wtfe_project`
 Project-level understanding
 
 - identify project type (service / library / tool / hybrid)
@@ -102,7 +102,7 @@ Key question: *What kind of project is this?*
 
 ---
 
-### `wtfe-runtime` (planned)
+### `wtfe_runtime` (planned)
 Runtime reverse-mapping
 
 - Input: `pid` / `port` / `service name`

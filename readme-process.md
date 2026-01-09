@@ -17,15 +17,15 @@ WTFE 采用 **三条并行的自底向上分析管道**，分别从不同维度�
 **从结构推断能力**
 
 ```
-A1: 单文件分析 (wtfe-file)
+A1: 单文件分析 (wtfe_file)
    输入：单个源文件
    输出：FileFact（结构、信号、角色、置信度）
    
-A2: 文件夹聚合 (wtfe-folder)  
+A2: 文件夹聚合 (wtfe_folder)  
    输入：目录 + 多个 FileFact
    输出：ModuleSummary（模块职责、核心文件、依赖）
    
-A3: 项目能力总结 (wtfe-project)
+A3: 项目能力总结 (wtfe_project)
    输入：多个 ModuleSummary
    输出：ProjectCapabilities（技术栈、架构类型、领域特征）
 ```
@@ -42,7 +42,7 @@ A3: 项目能力总结 (wtfe-project)
 **从入口推断运行方式**
 
 ```
-B1: 入口点检测 (wtfe-run)
+B1: 入口点检测 (wtfe_run)
    输入：项目根目录
    输出：EntryPoint[]（main、Makefile、package.json scripts、Dockerfile CMD）
    
@@ -134,10 +134,10 @@ WTFE 采用 **自底向上的分层抽象** + **高权重作者意图融合** �
 | 层级 | 名称 | 实现模块 | 输出 |
 |------|------|----------|------|
 | **L0** | 原始源代码 | - | `.py`, `.js`, `.ts`, `.java` 等文件 |
-| **L1** | 文件特征树 | `wtfe-file` | FileFact（结构、信号、角色、置信度） |
-| **L2** | 文件功能摘要 | `wtfe-file` | 角色推断 + 能力标签 |
-| **L3** | 模块职责层 | `wtfe-folder` | ModuleSummary（核心文件、主要职责、依赖关系） |
-| **L4** | 项目语义总结 | `wtfe-readme` (AI) | 自然语言 README / 架构说明 |
+| **L1** | 文件特征树 | `wtfe_file` | FileFact（结构、信号、角色、置信度） |
+| **L2** | 文件功能摘要 | `wtfe_file` | 角色推断 + 能力标签 |
+| **L3** | 模块职责层 | `wtfe_folder` | ModuleSummary（核心文件、主要职责、依赖关系） |
+| **L4** | 项目语义总结 | `wtfe_readme` (AI) | 自然语言 README / 架构说明 |
 
 ### Author-Intent Channel（作者意图通道）
 
@@ -169,31 +169,31 @@ wtfe/
 ├── core/                  # 核心数据模型
 │   └── models.py         # FileFact, ModuleSummary, EntryPoint, RunConfig, ProjectContext, AuthorIntent
 │
-├── wtfe-file/            # Pipeline A1：单文件分析
+├── wtfe_file/            # Pipeline A1：单文件分析
 │   ├── wtfe_file.py      # ✅ 已完成：支持 11 种文件类型
 │   └── readme.md         # 模块文档
 │
-├── wtfe-folder/          # Pipeline A2：文件夹聚合
+├── wtfe_folder/          # Pipeline A2：文件夹聚合
 │   ├── wtfe_folder.py    # ✅ 已完成：递归分析、角色聚类、核心文件识别
 │   └── readme.md         # 模块文档
 │
-├── wtfe-run/             # Pipeline B1：入口点检测
+├── wtfe_run/             # Pipeline B1：入口点检测
 │   ├── wtfe_run.py       # ✅ 已完成：识别 main、Makefile、Docker、npm scripts
 │   └── readme.md         # 模块文档
 │
-├── wtfe-context/         # Pipeline C：上下文分析
+├── wtfe_context/         # Pipeline C：上下文分析
 │   ├── wtfe_context.py   # ✅ 已完成：收集40+原始信号，不做预判
 │   └── readme.md         # 模块文档
 │
-├── wtfe-intent/          # Author-Intent Channel：作者意图提取
+├── wtfe_intent/          # Author-Intent Channel：作者意图提取
 │   ├── wtfe_intent.py    # ✅ 已完成：提取README/CHANGELOG/LICENSE/package元数据
 │   └── readme.md         # 模块文档
 │
-├── wtfe-analyze/         # 统一编排器
+├── wtfe_analyze/         # 统一编排器
 │   ├── wtfe_analyze.py   # ✅ 已完成：整合所有管道，输出统一JSON
 │   └── readme.md         # 模块文档
 │
-├── wtfe-readme/          # AI 生成层
+├── wtfe_readme/          # AI 生成层
 │   ├── providers/        # AI服务提供商抽象
 │   │   ├── base.py      # Provider基类
 │   │   └── openai.py    # ✅ OpenAI兼容API实现
@@ -224,16 +224,16 @@ wtfe/
 | 模块 | 状态 | 功能 |
 |------|------|------|
 | **core/models.py** | ✅ 完成 | 定义了所有数据结构（FileFact, ModuleSummary, EntryPoint, RunConfig, ProjectContext, AuthorIntent, Evidence, FileRole） |
-| **wtfe-file** | ✅ 完成 | 支持 11 种文件类型，输出符合 FileFact 规范，包含角色推断和置信度评分 |
-| **wtfe-folder** | ✅ 完成 | 递归文件夹分析，角色聚类，核心文件识别，能力聚合，支持子文件夹 |
-| **wtfe-run** | ✅ 完成 | 入口点检测（Python main、Makefile targets、npm scripts、Dockerfile CMD、运行时依赖推断） |
-| **wtfe-context** | ✅ 完成 | 收集40+项目信号（不预判类型），统计规模，提取依赖，检测成熟度指标 |
-| **wtfe-intent** | ✅ 完成 | 提取作者意图文档（README/CHANGELOG/LICENSE），package元数据，高权重信号源 |
-| **wtfe-analyze** | ✅ 完成 | 统一编排器，整合所有管道输出，生成结构化JSON，准备AI输入 |
-| **wtfe-readme** | ✅ 完成 | AI生成层，支持OpenAI兼容API，默认DeepSeek-V3.2模型，环境变量配置 |
+| **wtfe_file** | ✅ 完成 | 支持 11 种文件类型，输出符合 FileFact 规范，包含角色推断和置信度评分 |
+| **wtfe_folder** | ✅ 完成 | 递归文件夹分析，角色聚类，核心文件识别，能力聚合，支持子文件夹 |
+| **wtfe_run** | ✅ 完成 | 入口点检测（Python main、Makefile targets、npm scripts、Dockerfile CMD、运行时依赖推断） |
+| **wtfe_context** | ✅ 完成 | 收集40+项目信号（不预判类型），统计规模，提取依赖，检测成熟度指标 |
+| **wtfe_intent** | ✅ 完成 | 提取作者意图文档（README/CHANGELOG/LICENSE），package元数据，高权重信号源 |
+| **wtfe_analyze** | ✅ 完成 | 统一编排器，整合所有管道输出，生成结构化JSON，准备AI输入 |
+| **wtfe_readme** | ✅ 完成 | AI生成层，支持OpenAI兼容API，默认DeepSeek-V3.2模型，环境变量配置 |
 | **测试框架** | ✅ 完成 | 17个示例文件 + example_folder真实项目 + 批量测试脚本，所有测试通过 |
 
-**wtfe-file 支持的文件类型**：
+**wtfe_file 支持的文件类型**：
 - Python (.py) - AST 解析
 - JavaScript (.js/.jsx) - 正则提取，检测 CommonJS/ESM/React
 - TypeScript (.ts/.tsx) - 类型和 JSX 检测
@@ -251,9 +251,9 @@ wtfe/
 | 优先级 | 模块 | 描述 |
 |--------|------|------|
 | 1 | **CLI 入口** | 统一命令行工具 `wtfe analyze <path>` 调用所有模块，输出完整分析结果 |
-| 2 | **wtfe-readme** | AI 生成层：将压缩事实（FileFact + ModuleSummary + RunConfig + ProjectContext）项目成熟度分析（检测 tests、CI、typing、文档） |
+| 2 | **wtfe_readme** | AI 生成层：将压缩事实（FileFact + ModuleSummary + RunConfig + ProjectContext）项目成熟度分析（检测 tests、CI、typing、文档） |
 | 4 | **CLI 入口** | 统一命令行工具 `wtfe analyze <path>` 调用所有模块 |
-| 5 | **wtfe-readme** | AI 生成层：将压缩事实转为自然语言 README |
+| 5 | **wtfe_readme** | AI 生成层：将压缩事实转为自然语言 README |
 
 ---
 
@@ -297,7 +297,7 @@ File Facts → Module Summary → Project Capabilities → AI-Generated README
 ### 分析单个文件
 
 ```bash
-python wtfe-file/wtfe_file.py example/8bit_marshmallow.py
+python wtfe_file/wtfe_file.py example/8bit_marshmallow.py
 ```
 
 输出：
@@ -322,7 +322,7 @@ python wtfe-file/wtfe_file.py example/8bit_marshmallow.py
 ### 检测项目入口点
 
 ```bash
-python wtfe-run/wtfe_run.py .
+python wtfe_run/wtfe_run.py .
 ```
 
 输出：
@@ -330,9 +330,9 @@ python wtfe-run/wtfe_run.py .
 {
   "entry_points": [
     {
-      "file": "wtfe-file/wtfe_file.py",
+      "file": "wtfe_file/wtfe_file.py",
       "type": "main",
-      "command": "python wtfe-file/wtfe_file.py",
+      "command": "python wtfe_file/wtfe_file.py",
       "confidence": 0.8
     }
   ],
@@ -410,12 +410,12 @@ WTFE 关注的是 **"工程现实"而非"作者意图"**。
 
 按优先级执行：
 
-1. ✅ ~~重构 wtfe-file 输出为 FileFact 对象~~
-2. ✅ ~~实现 wtfe-folder（Pipeline A2）~~
-3. ✅ ~~实现 wtfe-context（Pipeline C）~~
-4. ✅ ~~实现 wtfe-intent（Author-Intent Channel）~~
-5. ✅ ~~实现 wtfe-analyze（统一编排器）~~
-6. ✅ ~~实现 wtfe-readme（AI 生成层）~~
+1. ✅ ~~重构 wtfe_file 输出为 FileFact 对象~~
+2. ✅ ~~实现 wtfe_folder（Pipeline A2）~~
+3. ✅ ~~实现 wtfe_context（Pipeline C）~~
+4. ✅ ~~实现 wtfe_intent（Author-Intent Channel）~~
+5. ✅ ~~实现 wtfe_analyze（统一编排器）~~
+6. ✅ ~~实现 wtfe_readme（AI 生成层）~~
 7. 📋 **测试和优化**
 
 **当前状态**：🎉 **所有核心模块已完成！** 可运行完整流程：
@@ -426,15 +426,15 @@ $env:WTFE_API_KEY = "sk-your-api-key"  # Windows
 # export WTFE_API_KEY="sk-xxx"  # Linux/Mac
 
 # 一键生成README
-python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
+python wtfe_analyze/wtfe_analyze.py ./your-project | python wtfe_readme/wtfe_readme.py -
 ```
 
-1. ✅ ~~重构 wtfe-file 输出为 FileFact 对象~~
-2. ✅ ~~实现 wtfe-folder（Pipeline A2）~~
-3. ✅ ~~实现 wtfe-context（Pipeline C）~~
-4. ✅ ~~实现 wtfe-intent（Author-Intent Channel）~~
-5. ✅ ~~实现 wtfe-analyze（统一编排器）~~
-6. ✅ ~~实现 wtfe-readme（AI 生成层）~~
+1. ✅ ~~重构 wtfe_file 输出为 FileFact 对象~~
+2. ✅ ~~实现 wtfe_folder（Pipeline A2）~~
+3. ✅ ~~实现 wtfe_context（Pipeline C）~~
+4. ✅ ~~实现 wtfe_intent（Author-Intent Channel）~~
+5. ✅ ~~实现 wtfe_analyze（统一编排器）~~
+6. ✅ ~~实现 wtfe_readme（AI 生成层）~~
 7. 📋 **测试和优化**
 
 **当前状态**：🎉 **所有核心模块已完成！** 可运行完整流程生成README。

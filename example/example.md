@@ -1,6 +1,6 @@
 # Example Project
 
-This is a sample README used for testing `wtfe-file`.
+This is a sample README used for testing `wtfe_file`.
 
 ## Usage
 

@@ -16,7 +16,7 @@ class FolderAnalyzer:
     
     def __init__(self, folder_path: str, recursive: bool = True):
         self.folder_path = Path(folder_path).resolve()
-        self.wtfe_file_script = Path(__file__).parent.parent / "wtfe-file" / "wtfe_file.py"
+        self.wtfe_file_script = Path(__file__).parent.parent / "wtfe_file" / "wtfe_file.py"
         self.facts: List[FileFact] = []
         self.recursive = recursive
         self.subfolder_summaries: List[ModuleSummary] = []
@@ -52,7 +52,7 @@ class FolderAnalyzer:
         )
     
     def _scan_files(self):
-        """Scan folder and analyze each file with wtfe-file."""
+        """Scan folder and analyze each file with wtfe_file."""
         supported_extensions = {'.py', '.js', '.jsx', '.ts', '.tsx', '.html', 
                                '.java', '.json', '.yml', '.yaml', '.md', '.ipynb'}
         special_files = {'Dockerfile', 'Makefile', 'makefile'}
@@ -83,7 +83,7 @@ class FolderAnalyzer:
                     print(f"Warning: Failed to analyze subfolder {item.name}: {e}", file=sys.stderr)
     
     def _analyze_file(self, filepath: Path) -> FileFact:
-        """Call wtfe-file to analyze a single file."""
+        """Call wtfe_file to analyze a single file."""
         try:
             result = subprocess.run(
                 [sys.executable, str(self.wtfe_file_script), str(filepath)],

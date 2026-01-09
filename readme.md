@@ -10,7 +10,7 @@
 
 **前置条件**：
 1. 安装依赖：`pip install -r requirements.txt`
-2. 设置环境变量 `WTFE_API_KEY` 或修改配置文件 `wtfe-readme/config.yaml`（二选一）。
+2. 设置环境变量 `WTFE_API_KEY` 或修改配置文件 `wtfe_readme/config.yaml`（二选一）。
    *注：如果未配置，程序将在首次运行时自动启动交互式配置向导。*
 
 ```bash
@@ -23,7 +23,7 @@ python wtfe.py ./your-project
 # export WTFE_API_KEY="sk-..."  # Linux/Mac
 
 # 2. 执行分析与生成
-python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
+python wtfe_analyze/wtfe_analyze.py ./your-project | python wtfe_readme/wtfe_readme.py -
 ```
 
 ### 测试单个模块
@@ -48,17 +48,17 @@ python wtfe.py --help
 
 | 模块 | 功能 | 状态 |
 |------|------|------|
-| **wtfe-file** | 单文件分析，支持11种文件类型（Python/JS/TS/Java等） | ✅ |
-| **wtfe-folder** | 文件夹递归分析，识别核心文件和模块职责 | ✅ |
-| **wtfe-run** | 检测项目入口点（main/Makefile/Dockerfile/npm scripts） | ✅ |
-| **wtfe-context** | 收集40+项目信号（规模/成熟度/技术栈） | ✅ |
-| **wtfe-intent** | 提取现有README/LICENSE/CHANGELOG（作者意图） | ✅ |
-| **wtfe-analyze** | 统一编排所有模块，输出结构化JSON | ✅ |
-| **wtfe-readme** | AI生成自然语言README文档 | ✅ |
+| **wtfe_file** | 单文件分析，支持11种文件类型（Python/JS/TS/Java等） | ✅ |
+| **wtfe_folder** | 文件夹递归分析，识别核心文件和模块职责 | ✅ |
+| **wtfe_run** | 检测项目入口点（main/Makefile/Dockerfile/npm scripts） | ✅ |
+| **wtfe_context** | 收集40+项目信号（规模/成熟度/技术栈） | ✅ |
+| **wtfe_intent** | 提取现有README/LICENSE/CHANGELOG（作者意图） | ✅ |
+| **wtfe_analyze** | 统一编排所有模块，输出结构化JSON | ✅ |
+| **wtfe_readme** | AI生成自然语言README文档 | ✅ |
 
 ## 配置说明
 
-### wtfe-readme配置（config.yaml）
+### wtfe_readme配置（config.yaml）
 
 ```yaml
 # API服务商（支持OpenAI兼容格式）
@@ -96,20 +96,20 @@ language: zh-cn  # zh-cn | en
 │ 源代码项目  │
 └──────┬──────┘
        │
-       ├──→ wtfe-file    (单文件特征提取)
-       ├──→ wtfe-folder  (模块结构分析)
-       ├──→ wtfe-run     (入口点检测)
-       ├──→ wtfe-context (项目信号收集)
-       └──→ wtfe-intent  (现有文档提取)
+       ├──→ wtfe_file    (单文件特征提取)
+       ├──→ wtfe_folder  (模块结构分析)
+       ├──→ wtfe_run     (入口点检测)
+       ├──→ wtfe_context (项目信号收集)
+       └──→ wtfe_intent  (现有文档提取)
        │
        ↓
 ┌──────────────┐
-│ wtfe-analyze │ 统一编排，生成JSON
+│ wtfe_analyze │ 统一编排，生成JSON
 └──────┬───────┘
        │
        ↓
 ┌──────────────┐
-│ wtfe-readme  │ AI转换为自然语言
+│ wtfe_readme  │ AI转换为自然语言
 └──────┬───────┘
        │
        ↓
@@ -167,13 +167,13 @@ language: zh-cn  # zh-cn | en
 ```
 wtfe/
 ├── core/models.py           # 数据结构定义
-├── wtfe-file/               # 单文件分析
-├── wtfe-folder/             # 文件夹聚合
-├── wtfe-run/                # 入口点检测
-├── wtfe-context/            # 上下文信号
-├── wtfe-intent/             # 作者意图提取
-├── wtfe-analyze/            # 统一编排器
-├── wtfe-readme/             # AI生成层
+├── wtfe_file/               # 单文件分析
+├── wtfe_folder/             # 文件夹聚合
+├── wtfe_run/                # 入口点检测
+├── wtfe_context/            # 上下文信号
+├── wtfe_intent/             # 作者意图提取
+├── wtfe_analyze/            # 统一编排器
+├── wtfe_readme/             # AI生成层
 │   ├── providers/           # AI服务抽象
 │   ├── templates/prompt.py  # Prompt模板
 │   ├── config.yaml          # 配置文件

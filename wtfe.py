@@ -60,7 +60,7 @@ def check_api_key():
     if os.environ.get('WTFE_API_KEY'):
         return True
     wtfe_root = get_wtfe_root()
-    config_path = wtfe_root / 'wtfe-readme' / 'config.yaml'
+    config_path = wtfe_root / 'wtfe_readme' / 'config.yaml'
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             cfg = yaml.safe_load(f)
@@ -107,9 +107,9 @@ def check_api_key():
 
 def run_module(name, args):
     wtfe_root = get_wtfe_root()
-    m = {'file':'wtfe-file/wtfe_file.py','folder':'wtfe-folder/wtfe_folder.py','run':'wtfe-run/wtfe_run.py',
-         'context':'wtfe-context/wtfe_context.py','intent':'wtfe-intent/wtfe_intent.py',
-         'analyze':'wtfe-analyze/wtfe_analyze.py','readme':'wtfe-readme/wtfe_readme.py'}
+    m = {'file':'wtfe_file/wtfe_file.py','folder':'wtfe_folder/wtfe_folder.py','run':'wtfe_run/wtfe_run.py',
+         'context':'wtfe_context/wtfe_context.py','intent':'wtfe_intent/wtfe_intent.py',
+         'analyze':'wtfe_analyze/wtfe_analyze.py','readme':'wtfe_readme/wtfe_readme.py'}
     if name not in m:
         print(f'Unknown module: {name}', file=sys.stderr)
         sys.exit(1)
@@ -128,7 +128,7 @@ def run_full(path):
     
     spinner = Spinner('Analyzing')
     spinner.start()
-    r = subprocess.run([sys.executable, str(wtfe_root/'wtfe-analyze'/'wtfe_analyze.py'), path], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(wtfe_root/'wtfe_analyze'/'wtfe_analyze.py'), path], capture_output=True, text=True)
     if r.returncode != 0:
         spinner.stop(f'{Colors.RED}Analysis failed{Colors.RESET}')
         print(r.stderr, file=sys.stderr)
@@ -137,7 +137,7 @@ def run_full(path):
     
     spinner = Spinner('Generating README')
     spinner.start()
-    r2 = subprocess.run([sys.executable, str(wtfe_root/'wtfe-readme'/'wtfe_readme.py'), '-'], input=r.stdout, text=True, capture_output=True)
+    r2 = subprocess.run([sys.executable, str(wtfe_root/'wtfe_readme'/'wtfe_readme.py'), '-'], input=r.stdout, text=True, capture_output=True)
     if r2.returncode != 0:
         spinner.stop(f'{Colors.RED}Generation failed{Colors.RESET}')
         print(r2.stderr, file=sys.stderr)

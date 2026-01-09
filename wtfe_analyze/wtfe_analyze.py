@@ -3,12 +3,11 @@
 This module coordinates all analysis pipelines and produces a comprehensive
 project analysis report by integrating:
 
-- Pipeline A1: wtfe-file (single file analysis)
-- Pipeline A2: wtfe-folder (folder aggregation)
-- Pipeline B1: wtfe-run (entry point detection)
-- Pipeline C: wtfe-context (project context signals)
-- Author-Intent Channel: wtfe-intent (documentation extraction)
-
+- Pipeline A1: wtfe_file (single file analysis)
+- Pipeline A2: wtfe_folder (folder aggregation)
+- Pipeline B1: wtfe_run (entry point detection)
+- Pipeline C: wtfe_context (project context signals)
+- Author-Intent Channel: wtfe_intent (documentation extraction)
 Output: Unified JSON structure ready for AI-powered README generation.
 """
 import sys
@@ -91,9 +90,9 @@ class ProjectAnalyzer:
         return result
     
     def _run_folder_analysis(self) -> Dict[str, Any]:
-        """Run wtfe-folder analysis."""
+        """Run wtfe_folder analysis."""
         try:
-            folder_module_path = self.wtfe_root / 'wtfe-folder'
+            folder_module_path = self.wtfe_root / 'wtfe_folder'
             if str(folder_module_path) not in sys.path:
                 sys.path.insert(0, str(folder_module_path))
             
@@ -117,9 +116,9 @@ class ProjectAnalyzer:
             return {"error": str(e)}
     
     def _run_entry_point_analysis(self) -> Dict[str, Any]:
-        """Run wtfe-run analysis."""
+        """Run wtfe_run analysis."""
         try:
-            run_module_path = self.wtfe_root / 'wtfe-run'
+            run_module_path = self.wtfe_root / 'wtfe_run'
             if str(run_module_path) not in sys.path:
                 sys.path.insert(0, str(run_module_path))
             
@@ -152,9 +151,9 @@ class ProjectAnalyzer:
             return {"error": str(e)}
     
     def _run_context_analysis(self) -> Dict[str, Any]:
-        """Run wtfe-context analysis."""
+        """Run wtfe_context analysis."""
         try:
-            context_module_path = self.wtfe_root / 'wtfe-context'
+            context_module_path = self.wtfe_root / 'wtfe_context'
             if str(context_module_path) not in sys.path:
                 sys.path.insert(0, str(context_module_path))
             if str(self.wtfe_root) not in sys.path:
@@ -186,9 +185,9 @@ class ProjectAnalyzer:
             return {"error": str(e)}
     
     def _run_intent_extraction(self) -> Dict[str, Any]:
-        """Run wtfe-intent extraction."""
+        """Run wtfe_intent extraction."""
         try:
-            intent_module_path = self.wtfe_root / 'wtfe-intent'
+            intent_module_path = self.wtfe_root / 'wtfe_intent'
             if str(intent_module_path) not in sys.path:
                 sys.path.insert(0, str(intent_module_path))
             

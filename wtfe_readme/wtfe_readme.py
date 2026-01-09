@@ -80,7 +80,7 @@ class READMEGenerator:
         生成README
         
         Args:
-            analysis_result: wtfe-analyze输出的JSON
+            analysis_result: wtfe_analyze输出的JSON
         
         Returns:
             生成的README内容（Markdown）
@@ -115,7 +115,7 @@ class READMEGenerator:
         生成README并保存到文件
         
         Args:
-            analysis_result: wtfe-analyze输出的JSON
+            analysis_result: wtfe_analyze输出的JSON
             output_path: 输出路径（默认使用config中的配置）
         
         Returns:
@@ -158,7 +158,7 @@ def main():
         print("Usage: python wtfe_readme.py <analysis_json_file_or_stdin>", file=sys.stderr)
         print("\nExamples:", file=sys.stderr)
         print("  python wtfe_readme.py analysis.json", file=sys.stderr)
-        print("  python wtfe-analyze/wtfe_analyze.py . | python wtfe_readme.py -", file=sys.stderr)
+        print("  python wtfe_analyze/wtfe_analyze.py . | python wtfe_readme.py -", file=sys.stderr)
         sys.exit(1)
     
     input_source = sys.argv[1]

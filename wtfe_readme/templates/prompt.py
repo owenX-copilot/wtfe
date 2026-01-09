@@ -10,7 +10,7 @@ def build_readme_prompt(analysis_result: Dict[str, Any], config: Dict[str, Any])
     构建README生成的Prompt
     
     Args:
-        analysis_result: wtfe-analyze输出的完整JSON
+        analysis_result: wtfe_analyze输出的完整JSON
         config: 配置字典（从config.yaml读取）
     
     Returns:

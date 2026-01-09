@@ -39,10 +39,10 @@ WTFE-run 负责回答 **"这个项目怎么跑起来"** 的问题。
 
 ```bash
 # 分析当前项目
-python wtfe-run/wtfe_run.py .
+python wtfe_run/wtfe_run.py .
 
 # 分析指定项目
-python wtfe-run/wtfe_run.py /path/to/project
+python wtfe_run/wtfe_run.py /path/to/project
 ```
 
 ---
@@ -77,4 +77,4 @@ python wtfe-run/wtfe_run.py /path/to/project
 - [ ] 解析 requirements.txt / Pipfile / pyproject.toml 获取依赖
 - [ ] 识别环境变量需求（.env.example, config files）
 - [ ] 支持多环境识别（dev/staging/prod）
-- [ ] 与 wtfe-file 集成，从代码导入推断依赖
+- [ ] 与 wtfe_file 集成，从代码导入推断依赖

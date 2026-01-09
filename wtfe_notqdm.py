@@ -22,7 +22,7 @@ def get_wtfe_root():
 def run_analyze(project_path: str, output_json: bool = False):
     """运行项目分析"""
     wtfe_root = get_wtfe_root()
-    analyze_script = wtfe_root / 'wtfe-analyze' / 'wtfe_analyze.py'
+    analyze_script = wtfe_root / 'wtfe_analyze' / 'wtfe_analyze.py'
     
     cmd = [sys.executable, str(analyze_script), project_path]
     
@@ -42,7 +42,7 @@ def run_analyze(project_path: str, output_json: bool = False):
 def run_readme(analysis_json: str):
     """运行README生成"""
     wtfe_root = get_wtfe_root()
-    readme_script = wtfe_root / 'wtfe-readme' / 'wtfe_readme.py'
+    readme_script = wtfe_root / 'wtfe_readme' / 'wtfe_readme.py'
     
     # 通过stdin传递JSON
     cmd = [sys.executable, str(readme_script), '-']

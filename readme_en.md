@@ -10,7 +10,7 @@ Facing an unknown project and don't know what it does or how to run it? WTFE ext
 
 **Prerequisites**:
 1. Install dependencies: `pip install -r requirements.txt`
-2. Set the `WTFE_API_KEY` environment variable OR modify `wtfe-readme/config.yaml`.
+2. Set the `WTFE_API_KEY` environment variable OR modify `wtfe_readme/config.yaml`.
    *Note: If not configured, an interactive setup wizard will launch on the first run.*
 
 ```bash
@@ -23,7 +23,7 @@ python wtfe.py ./your-project
 # $env:WTFE_API_KEY = "sk-..."  # Windows
 
 # 2. Analyze and Generate
-python wtfe-analyze/wtfe_analyze.py ./your-project | python wtfe-readme/wtfe_readme.py -
+python wtfe_analyze/wtfe_analyze.py ./your-project | python wtfe_readme/wtfe_readme.py -
 ```
 
 ### Test Individual Modules
@@ -48,17 +48,17 @@ python wtfe.py --help
 
 | Module | Function | Status |
 |--------|----------|--------|
-| **wtfe-file** | Single file analysis, supports 11 file types (Python/JS/TS/Java, etc.) | ✅ |
-| **wtfe-folder** | Recursive folder analysis, identifies core files and module responsibilities | ✅ |
-| **wtfe-run** | Detects entry points (main/Makefile/Dockerfile/npm scripts) | ✅ |
-| **wtfe-context** | Collects 40+ project signals (scale/maturity/tech stack) | ✅ |
-| **wtfe-intent** | Extracts existing README/LICENSE/CHANGELOG (author intent) | ✅ |
-| **wtfe-analyze** | Orchestrates all modules, outputs structured JSON | ✅ |
-| **wtfe-readme** | AI-generated natural language README | ✅ |
+| **wtfe_file** | Single file analysis, supports 11 file types (Python/JS/TS/Java, etc.) | ✅ |
+| **wtfe_folder** | Recursive folder analysis, identifies core files and module responsibilities | ✅ |
+| **wtfe_run** | Detects entry points (main/Makefile/Dockerfile/npm scripts) | ✅ |
+| **wtfe_context** | Collects 40+ project signals (scale/maturity/tech stack) | ✅ |
+| **wtfe_intent** | Extracts existing README/LICENSE/CHANGELOG (author intent) | ✅ |
+| **wtfe_analyze** | Orchestrates all modules, outputs structured JSON | ✅ |
+| **wtfe_readme** | AI-generated natural language README | ✅ |
 
 ## Configuration
 
-### wtfe-readme Configuration (config.yaml)
+### wtfe_readme Configuration (config.yaml)
 
 ```yaml
 # API Provider (supports OpenAI-compatible format)
@@ -96,20 +96,20 @@ language: en  # zh-cn | en
 │ Source Code │
 └──────┬──────┘
        │
-       ├──→ wtfe-file    (file feature extraction)
-       ├──→ wtfe-folder  (module structure analysis)
-       ├──→ wtfe-run     (entry point detection)
-       ├──→ wtfe-context (project signal collection)
-       └──→ wtfe-intent  (existing docs extraction)
+       ├──→ wtfe_file    (file feature extraction)
+       ├──→ wtfe_folder  (module structure analysis)
+       ├──→ wtfe_run     (entry point detection)
+       ├──→ wtfe_context (project signal collection)
+       └──→ wtfe_intent  (existing docs extraction)
        │
        ↓
 ┌──────────────┐
-│ wtfe-analyze │ Orchestrate, generate JSON
+│ wtfe_analyze │ Orchestrate, generate JSON
 └──────┬───────┘
        │
        ↓
 ┌──────────────┐
-│ wtfe-readme  │ AI converts to natural language
+│ wtfe_readme  │ AI converts to natural language
 └──────┬───────┘
        │
        ↓
@@ -167,13 +167,13 @@ Based on the above JSON, AI generates a README containing:
 ```
 wtfe/
 ├── core/models.py           # Data structure definitions
-├── wtfe-file/               # Single file analysis
-├── wtfe-folder/             # Folder aggregation
-├── wtfe-run/                # Entry point detection
-├── wtfe-context/            # Context signals
-├── wtfe-intent/             # Author intent extraction
-├── wtfe-analyze/            # Orchestrator
-├── wtfe-readme/             # AI generation layer
+├── wtfe_file/               # Single file analysis
+├── wtfe_folder/             # Folder aggregation
+├── wtfe_run/                # Entry point detection
+├── wtfe_context/            # Context signals
+├── wtfe_intent/             # Author intent extraction
+├── wtfe_analyze/            # Orchestrator
+├── wtfe_readme/             # AI generation layer
 │   ├── providers/           # AI service abstraction
 │   ├── templates/prompt.py  # Prompt templates
 │   ├── config.yaml          # Configuration file

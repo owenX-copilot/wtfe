@@ -1,6 +1,6 @@
-# WTFE-file — 管线 A1：文件级事实提取
+# WTFE_file — 管线 A1：文件级事实提取
 
-WTFE-file 是 WTFE 分析框架的**第一层**，负责单文件级别的结构化事实提取。
+WTFE_file 是 WTFE 分析框架的**第一层**，负责单文件级别的结构化事实提取。
 
 它是整个分析管线的基础，为上层聚合与推断提供高质量、可缓存的结构化数据。
 
@@ -101,7 +101,7 @@ WTFE 当前关注 **“结构信号”而非“语义解释”**，主要包括�
 
 ```bash
 # 分析单个文件
-python wtfe-file/wtfe_file.py example/example.py
+python wtfe_file/wtfe_file.py example/example.py
 
 # 批量测试
 python scripts/test_examples.py
@@ -111,11 +111,11 @@ python scripts/test_examples.py
 
 ## 输出到上层
 
-WTFE-file 的输出会被：
-- **wtfe-folder** 聚合为模块职责
-- **wtfe-run** 用于识别入口点与启动方式
-- **wtfe-context** 用于判断项目成熟度
-- 最终由 **wtfe-readme** 转换为自然语言文档
+WTFE_file 的输出会被：
+- **wtfe_folder** 聚合为模块职责
+- **wtfe_run** 用于识别入口点与启动方式
+- **wtfe_context** 用于判断项目成熟度
+- 最终由 **wtfe_readme** 转换为自然语言文档
 
 ---
 

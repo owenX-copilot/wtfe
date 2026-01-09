@@ -1,30 +1,30 @@
-# wtfe-analyze
+# wtfe_analyze
 
 **统一分析编排器 - Unified Analysis Orchestrator**
 
 ## 功能
 
-wtfe-analyze 是WTFE框架的**核心编排器**，负责调用所有分析管道并生成统一的结构化输出。
+wtfe_analyze 是WTFE框架的**核心编排器**，负责调用所有分析管道并生成统一的结构化输出。
 
 它整合了：
-- **Pipeline A1/A2**: wtfe-file + wtfe-folder（文件和文件夹分析）
-- **Pipeline B1**: wtfe-run（入口点检测）
-- **Pipeline C**: wtfe-context（项目上下文信号）
-- **Author-Intent Channel**: wtfe-intent（作者意图提取）
+- **Pipeline A1/A2**: wtfe_file + wtfe_folder（文件和文件夹分析）
+- **Pipeline B1**: wtfe_run（入口点检测）
+- **Pipeline C**: wtfe_context（项目上下文信号）
+- **Author-Intent Channel**: wtfe_intent（作者意图提取）
 
 ## 使用方法
 
 ```bash
-python wtfe-analyze/wtfe_analyze.py <project_path>
+python wtfe_analyze/wtfe_analyze.py <project_path>
 ```
 
 **示例**：
 ```bash
 # 分析example_folder
-python wtfe-analyze/wtfe_analyze.py ./example/example_folder
+python wtfe_analyze/wtfe_analyze.py ./example/example_folder
 
 # 分析当前项目
-python wtfe-analyze/wtfe_analyze.py .
+python wtfe_analyze/wtfe_analyze.py .
 ```
 
 ## 输出结构
@@ -170,13 +170,13 @@ summary = {
 ### 结构化输出
 
 输出是纯JSON，便于：
-- 传递给AI处理（wtfe-readme）
+- 传递给AI处理（wtfe_readme）
 - 缓存和增量更新
 - 人类阅读调试
 
 ### 零AI依赖
 
-wtfe-analyze是纯规则+AST分析：
+wtfe_analyze是纯规则+AST分析：
 - 不调用任何AI API
 - 不依赖网络
 - 确定性输出（同一项目多次分析结果一致）
@@ -189,26 +189,26 @@ wtfe-analyze是纯规则+AST分析：
 - `analysis_timestamp`: 分析时间戳
 - `wtfe_version`: WTFE框架版本
 
-### folder_analysis (来自wtfe-folder)
+### folder_analysis (来自wtfe_folder)
 - `files`: 所有分析的文件列表
 - `core_files`: 核心文件（Top 5）
 - `primary_role`: 主要角色（entry_point/service/cli等）
 - `capabilities`: 能力列表
 - `external_deps`: 外部依赖（Top 20）
 
-### entry_points (来自wtfe-run)
+### entry_points (来自wtfe_run)
 - `entry_points`: 检测到的入口点列表
 - `makefile_targets`: Makefile目标
 - `package_scripts`: npm scripts
 - `dockerfile_cmds`: Dockerfile CMD/ENTRYPOINT
 - `runtime_deps`: 运行时依赖（DB/Cache/Queue）
 
-### context_signals (来自wtfe-context)
+### context_signals (来自wtfe_context)
 - `scale`: 项目规模（文件数、代码行数、语言分布）
 - `maturity`: 成熟度（has_tests, has_ci, has_typing）
 - `signals`: 40+布尔信号（文件存在性检测）
 
-### author_intent (来自wtfe-intent)
+### author_intent (来自wtfe_intent)
 - `project_readme`: 项目README原文
 - `module_readmes`: 模块README字典
 - `changelog`: CHANGELOG原文
@@ -226,16 +226,16 @@ wtfe-analyze是纯规则+AST分析：
 ## 与其他模块的关系
 
 ```
-wtfe-analyze (本模块)
+wtfe_analyze (本模块)
     ↓ 调用
-wtfe-folder, wtfe-run, wtfe-context, wtfe-intent
+wtfe_folder, wtfe_run, wtfe_context, wtfe_intent
     ↓ 输出
 统一JSON结构
     ↓ 传递
-wtfe-readme (AI生成层)
+wtfe_readme (AI生成层)
 ```
 
-wtfe-analyze是"事实收集的终点"和"AI生成的起点"。
+wtfe_analyze是"事实收集的终点"和"AI生成的起点"。
 
 ## 实现细节
 
@@ -246,7 +246,7 @@ wtfe-analyze是"事实收集的终点"和"AI生成的起点"。
 ```python
 self.wtfe_root = Path(__file__).parent.parent.resolve()
 
-folder_module_path = self.wtfe_root / 'wtfe-folder'
+folder_module_path = self.wtfe_root / 'wtfe_folder'
 sys.path.insert(0, str(folder_module_path))
 from wtfe_folder import FolderAnalyzer
 ```
@@ -282,20 +282,20 @@ python wtfe_analyze.py . 2>log.txt > result.json
 
 ### 场景1：初次分析项目
 ```bash
-python wtfe-analyze/wtfe_analyze.py /path/to/unknown/project > analysis.json
+python wtfe_analyze/wtfe_analyze.py /path/to/unknown/project > analysis.json
 ```
 获取完整的项目事实摘要。
 
 ### 场景2：传递给AI生成README
 ```bash
-python wtfe-analyze/wtfe_analyze.py . > facts.json
-python wtfe-readme/wtfe_readme.py facts.json > README_generated.md
+python wtfe_analyze/wtfe_analyze.py . > facts.json
+python wtfe_readme/wtfe_readme.py facts.json > README_generated.md
 ```
 
 ### 场景3：CI/CD集成
 ```bash
 # 在CI中自动分析变更
-python wtfe-analyze/wtfe_analyze.py . > build/analysis.json
+python wtfe_analyze/wtfe_analyze.py . > build/analysis.json
 # 检查是否有测试
 jq '.summary.has_tests' build/analysis.json
 ```
@@ -306,8 +306,8 @@ jq '.summary.has_tests' build/analysis.json
 - **不判断代码质量**：只记录事实，不评价好坏
 - **不执行代码**：不运行测试或启动项目验证
 
-这些功能由其他层负责，wtfe-analyze专注于"事实收集"。
+这些功能由其他层负责，wtfe_analyze专注于"事实收集"。
 
 ## 下一步
 
-wtfe-analyze的输出将作为wtfe-readme的输入，由AI转换为人类友好的README文档。
+wtfe_analyze的输出将作为wtfe_readme的输入，由AI转换为人类友好的README文档。

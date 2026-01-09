@@ -1,10 +1,10 @@
-# wtfe-readme
+# wtfe_readme
 
 **AI生成层 - 将项目分析转换为自然语言README**
 
 ## 功能
 
-wtfe-readme 是WTFE框架的**最终输出层**，负责将wtfe-analyze的结构化JSON数据转换为人类友好的README.md文档。
+wtfe_readme 是WTFE框架的**最终输出层**，负责将wtfe_analyze的结构化JSON数据转换为人类友好的README.md文档。
 
 它通过AI模型理解项目特征，生成：
 - 项目简介和功能特性
@@ -18,22 +18,22 @@ wtfe-readme 是WTFE框架的**最终输出层**，负责将wtfe-analyze的结构
 
 ```bash
 # 1. 先运行分析
-python wtfe-analyze/wtfe_analyze.py ./example/example_folder > analysis.json
+python wtfe_analyze/wtfe_analyze.py ./example/example_folder > analysis.json
 
 # 2. 基于分析结果生成README
-python wtfe-readme/wtfe_readme.py analysis.json
+python wtfe_readme/wtfe_readme.py analysis.json
 ```
 
 ### 方式2：管道模式
 
 ```bash
-python wtfe-analyze/wtfe_analyze.py ./example/example_folder | python wtfe-readme/wtfe_readme.py -
+python wtfe_analyze/wtfe_analyze.py ./example/example_folder | python wtfe_readme/wtfe_readme.py -
 ```
 
 ### 方式3：输出到stdout
 
 ```bash
-python wtfe-readme/wtfe_readme.py analysis.json --stdout > README_new.md
+python wtfe_readme/wtfe_readme.py analysis.json --stdout > README_new.md
 ```
 
 ## 配置说明
@@ -138,7 +138,7 @@ api_key: dummy
    - AI应融合现有描述，而非完全重写
 
 2. **基于事实**
-   - 所有内容必须基于wtfe-analyze的数据
+   - 所有内容必须基于wtfe_analyze的数据
    - 不编造功能或夸大能力
 
 3. **结构化输出**
@@ -247,22 +247,22 @@ class AIProvider(ABC):
 
 3. **迭代优化**：
    - 首次生成后，可将AI输出作为project_readme
-   - 再次运行wtfe-analyze+wtfe-readme
+   - 再次运行wtfe_analyze+wtfe_readme
    - AI会基于上次内容改进
 
 ## 与其他模块的关系
 
 ```
-wtfe-analyze (统一编排器)
+wtfe_analyze (统一编排器)
     ↓ 输出JSON
-wtfe-readme (本模块)
+wtfe_readme (本模块)
     ↓ 调用AI
 OpenAI兼容API (硅基流动/OpenAI/本地模型)
     ↓ 返回Markdown
 README.md (最终输出)
 ```
 
-wtfe-readme是WTFE框架的最后一环，将机器理解转换为人类阅读。
+wtfe_readme是WTFE框架的最后一环，将机器理解转换为人类阅读。
 
 ## 故障排查
 

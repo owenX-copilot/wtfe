@@ -1,13 +1,13 @@
-# wtfe-folder
+# wtfe_folder
 
 **Pipeline A2 - 文件夹级聚合分析**
 
 ## 功能
 
-wtfe-folder 负责分析一个文件夹，聚合其中所有文件的 FileFact，推断模块的主要职责。
+wtfe_folder 负责分析一个文件夹，聚合其中所有文件的 FileFact，推断模块的主要职责。
 
 它会：
-1. 扫描目录下所有支持的文件（调用wtfe-file）
+1. 扫描目录下所有支持的文件（调用wtfe_file）
 2. 按角色聚类（SERVICE, CLI, TEST, UTILITY等）
 3. 识别核心文件 vs 辅助文件
 4. 提取模块能力（网络、IO、框架等）
@@ -19,7 +19,7 @@ wtfe-folder 负责分析一个文件夹，聚合其中所有文件的 FileFact�
 ### 分析单个文件夹
 
 ```bash
-python wtfe-folder/wtfe_folder.py example/example_folder
+python wtfe_folder/wtfe_folder.py example/example_folder
 ```
 
 **输出示例**：
@@ -115,7 +115,7 @@ ENTRY_POINT (10) > SERVICE (8) > CLI (7) > LIBRARY (5) > UTILITY (4)
 
 ## 支持的文件类型
 
-与 wtfe-file 一致：
+与 wtfe_file 一致：
 - Python (.py)
 - JavaScript (.js/.jsx)
 - TypeScript (.ts/.tsx)
@@ -157,7 +157,7 @@ project/
     └── test_app.py
 ```
 
-wtfe-folder 需要：
+wtfe_folder 需要：
 1. 分析顶层文件（main.py, app.py）
 2. 递归分析 utils/（识别为utility模块）
 3. 递归分析 tests/（识别为test模块）
@@ -179,11 +179,11 @@ ignore_dirs = {
 ## 与其他模块的关系
 
 ```
-wtfe-file (单文件分析)
+wtfe_file (单文件分析)
     ↓
-wtfe-folder (文件夹聚合) ← 当前模块
+wtfe_folder (文件夹聚合) ← 当前模块
     ↓
-wtfe-project (项目级总结，未实现)
+wtfe_project (项目级总结，未实现)
 ```
 
-wtfe-folder 消费 wtfe-file 的输出（FileFact），产出 ModuleSummary。
+wtfe_folder 消费 wtfe_file 的输出（FileFact），产出 ModuleSummary。

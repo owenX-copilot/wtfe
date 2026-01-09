@@ -1,4 +1,4 @@
-"""Batch-run `wtfe-file/wtfe_file.py` against all files in `example/` and collect results.
+"""Batch-run `wtfe_file/wtfe_file.py` against all files in `example/` and collect results.
 
 Usage:
   python scripts/test_examples.py [--dir example] [--out example/example_results.json]
@@ -11,8 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_DIR = (ROOT / "example")
-WTFE_SCRIPT = ROOT / "wtfe-file" / "wtfe_file.py"
-
+WTFE_SCRIPT = ROOT / "wtfe_file" / "wtfe_file.py"
 
 def run_one(path: Path):
     try:
