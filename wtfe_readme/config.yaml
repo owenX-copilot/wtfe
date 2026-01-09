@@ -1,6 +1,6 @@
 api_key: your_api_key_here
 backup_existing: true
-base_url: https://api.deepseek.com
+base_url: https://api.siliconflow.cn/v1
 cache_enabled: false
 cache_ttl: 86400
 enable_thinking: false
@@ -9,7 +9,7 @@ include_badges: true
 include_toc: true
 language: zh-cn
 max_tokens: 4096
-model: deepseek-chat
+model: Pro/deepseek-ai/DeepSeek-V3.2
 output_file: README.md
 overwrite: false
 provider: openai
