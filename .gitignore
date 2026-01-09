@@ -56,3 +56,7 @@ dmypy.json
 # Temporary files
 *.tmp
 *.temp
+
+# WTFE API服务文件（不开放源代码）
+app.py
+wtfe-api/
