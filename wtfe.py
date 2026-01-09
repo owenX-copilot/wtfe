@@ -116,7 +116,7 @@ def run_module(name, args):
     cmd = [sys.executable, str(wtfe_root/m[name])] + args
     sys.exit(subprocess.run(cmd).returncode)
 
-def run_full(path):
+def run_full(path, detail=False):
     Colors.init_windows()
     wtfe_root = get_wtfe_root()
     if not check_api_key(): sys.exit(1)
@@ -125,15 +125,28 @@ def run_full(path):
         sys.exit(1)
     
     print(f'\n[WTFE] Analyzing: {path}\n')
+    if detail:
+        print(f'{Colors.YELLOW}[Detail Mode] Entry file contents will be included for better accuracy{Colors.RESET}\n', file=sys.stderr)
     
     spinner = Spinner('Analyzing')
     spinner.start()
-    r = subprocess.run([sys.executable, str(wtfe_root/'wtfe_analyze'/'wtfe_analyze.py'), path], capture_output=True, text=True)
+    cmd = [sys.executable, str(wtfe_root/'wtfe_analyze'/'wtfe_analyze.py'), path]
+    if detail:
+        cmd.append('--detail')
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         spinner.stop(f'{Colors.RED}Analysis failed{Colors.RESET}')
         print(r.stderr, file=sys.stderr)
         sys.exit(1)
     spinner.stop(f'{Colors.GREEN}Analysis done{Colors.RESET}')
+    
+    # Parse analysis JSON to extract log
+    analysis_log = {}
+    try:
+        analysis_json = json.loads(r.stdout)
+        analysis_log = analysis_json.get('analysis_log', {})
+    except:
+        pass
     
     spinner = Spinner('Generating README')
     spinner.start()
@@ -144,24 +157,66 @@ def run_full(path):
         sys.exit(1)
     spinner.stop(f'{Colors.GREEN}README saved{Colors.RESET}')
     
-    print(f'\n{Colors.GREEN}Done!{Colors.RESET} Check project folder for README.md\n')
+    # Print analysis summary log
+    print(f'\n{Colors.BOLD}[WTFE] Analysis Summary{Colors.RESET}')
+    print('=' * 60)
+    print(f'Mode: {Colors.CYAN}{analysis_log.get("mode", "unknown").upper()}{Colors.RESET}')
+    print(f'Modules executed: {", ".join(analysis_log.get("modules", {}).keys())}')
+    
+    # Detail mode specific log
+    if detail and 'entry_details' in analysis_log:
+        entry_log = analysis_log['entry_details']
+        if isinstance(entry_log, dict):
+            print(f'\n{Colors.BOLD}Detail Mode Statistics:{Colors.RESET}')
+            print(f'  • Files processed: {entry_log.get("files_processed", 0)}')
+            print(f'  • Full content sent: {entry_log.get("files_full_content", 0)} files')
+            print(f'  • Downgraded to snippet: {entry_log.get("files_downgraded", 0)} files')
+            print(f'  • Total tokens: {entry_log.get("total_tokens", 0)}')
+            if entry_log.get('files_details'):
+                print(f'\n  File details:')
+                for fd in entry_log['files_details']:
+                    mode_color = Colors.GREEN if fd.get('mode') == 'full' else Colors.YELLOW
+                    print(f'    - {fd["file"]}: {mode_color}{fd.get("mode", "unknown").upper()}{Colors.RESET} ({fd.get("tokens", 0)} tokens)')
+    
+    print('=' * 60 + '\n')
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: python wtfe.py <project_path>')
+        print('Usage: python wtfe.py [--detail] <project_path>')
         print('       python wtfe.py -m <module> <args>')
-        print('Modules: analyze, readme, file, folder, run, context, intent')
+        print('\nOptions:')
+        print('  --detail, -d    Enable detailed analysis (includes entry file contents for AI)')
+        print('\nModules: analyze, readme, file, folder, run, context, intent')
         sys.exit(0)
+    
+    detail = False
+    path_arg = None
+    
     if sys.argv[1] in ['-m', '--module']:
         if len(sys.argv) < 3:
             print('Error: Missing module name', file=sys.stderr)
             sys.exit(1)
         run_module(sys.argv[2], sys.argv[3:])
     elif sys.argv[1] in ['-h', '--help']:
-        print('Usage: python wtfe.py <project_path>')
+        print('Usage: python wtfe.py [--detail] <project_path>')
         print('       python wtfe.py -m <module> <args>')
+        print('\nOptions:')
+        print('  --detail, -d    Enable detailed analysis (includes entry file contents for AI)')
+        sys.exit(0)
     else:
-        run_full(sys.argv[1])
+        # Parse flags
+        args = sys.argv[1:]
+        for arg in args:
+            if arg in ['--detail', '-d']:
+                detail = True
+            elif not arg.startswith('-'):
+                path_arg = arg
+        
+        if not path_arg:
+            print('Error: Missing project path', file=sys.stderr)
+            sys.exit(1)
+        
+        run_full(path_arg, detail=detail)
 
 if __name__ == '__main__':
     main()

@@ -27,14 +27,16 @@ from core.models import FileFact, ModuleSummary, RunConfig, ProjectContext, Auth
 class ProjectAnalyzer:
     """Orchestrates all analysis pipelines."""
     
-    def __init__(self, project_path: str):
+    def __init__(self, project_path: str, detail: bool = False):
         """Initialize analyzer.
         
         Args:
             project_path: Path to project root directory
+            detail: Enable detailed analysis mode (includes full entry file contents)
         """
         self.project_path = Path(project_path).resolve()
         self.wtfe_root = Path(__file__).parent.parent.resolve()
+        self.detail = detail
         
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
@@ -50,21 +52,33 @@ class ProjectAnalyzer:
         """
         print(f"[WTFE] Analyzing project: {self.project_path.name}", file=sys.stderr)
         
+        # Initialize analysis log
+        analysis_log = {
+            "mode": "detail" if self.detail else "default",
+            "modules": {}
+        }
+        
         # Pipeline A2: Folder analysis (includes A1 file analysis)
         print("[WTFE] Running Pipeline A: Folder analysis...", file=sys.stderr)
         folder_summary = self._run_folder_analysis()
+        analysis_log["modules"]["folder"] = "completed"
         
         # Pipeline B1: Entry point detection
         print("[WTFE] Running Pipeline B: Entry point detection...", file=sys.stderr)
-        run_config = self._run_entry_point_analysis()
+        run_config, entry_log = self._run_entry_point_analysis()
+        analysis_log["modules"]["entry_detection"] = "completed"
+        if entry_log:
+            analysis_log["entry_details"] = entry_log
         
         # Pipeline C: Project context
         print("[WTFE] Running Pipeline C: Project context signals...", file=sys.stderr)
         project_context = self._run_context_analysis()
+        analysis_log["modules"]["context"] = "completed"
         
         # Author-Intent Channel
         print("[WTFE] Running Author-Intent Channel: Documentation extraction...", file=sys.stderr)
         author_intent = self._run_intent_extraction()
+        analysis_log["modules"]["intent"] = "completed"
         
         # Assemble unified output
         result = {
@@ -83,7 +97,8 @@ class ProjectAnalyzer:
                 run_config, 
                 project_context, 
                 author_intent
-            )
+            ),
+            "analysis_log": analysis_log
         }
         
         print("[WTFE] Analysis complete!", file=sys.stderr)
@@ -115,8 +130,12 @@ class ProjectAnalyzer:
             print(f"[WTFE] Warning: Folder analysis failed: {e}", file=sys.stderr)
             return {"error": str(e)}
     
-    def _run_entry_point_analysis(self) -> Dict[str, Any]:
-        """Run wtfe_run analysis."""
+    def _run_entry_point_analysis(self) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """Run wtfe_run analysis.
+        
+        Returns:
+            Tuple of (config_dict, analysis_log_dict)
+        """
         try:
             run_module_path = self.wtfe_root / 'wtfe_run'
             if str(run_module_path) not in sys.path:
@@ -125,9 +144,9 @@ class ProjectAnalyzer:
             from wtfe_run import EntryPointDetector
             
             detector = EntryPointDetector(str(self.project_path))
-            config = detector.detect()
+            config, entry_log = detector.detect(detail=self.detail)
             
-            return {
+            config_dict = {
                 "entry_points": [
                     {
                         "file": ep.file_path,
@@ -146,9 +165,13 @@ class ProjectAnalyzer:
                     "external_services": config.external_services
                 }
             }
+            
+            return config_dict, entry_log
         except Exception as e:
             print(f"[WTFE] Warning: Entry point analysis failed: {e}", file=sys.stderr)
-            return {"error": str(e)}
+            import traceback
+            traceback.print_exc()
+            return {"error": str(e)}, {}
     
     def _run_context_analysis(self) -> Dict[str, Any]:
         """Run wtfe_context analysis."""
@@ -232,17 +255,18 @@ class ProjectAnalyzer:
 
 def main():
     """Command-line interface."""
-    if len(sys.argv) != 2:
-        print("Usage: python wtfe_analyze.py <project_path>")
+    if len(sys.argv) < 2:
+        print("Usage: python wtfe_analyze.py <project_path> [--detail]")
         print("\nExample:")
         print("  python wtfe_analyze.py ./example/example_folder")
-        print("  python wtfe_analyze.py /path/to/project")
+        print("  python wtfe_analyze.py /path/to/project --detail")
         sys.exit(1)
     
     project_path = sys.argv[1]
+    detail = '--detail' in sys.argv
     
     try:
-        analyzer = ProjectAnalyzer(project_path)
+        analyzer = ProjectAnalyzer(project_path, detail=detail)
         result = analyzer.analyze()
         
         # Output JSON to stdout
@@ -250,6 +274,8 @@ def main():
         
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

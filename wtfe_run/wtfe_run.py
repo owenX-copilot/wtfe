@@ -24,10 +24,23 @@ class EntryPointDetector:
     
     def __init__(self, project_root: str):
         self.root = Path(project_root).resolve()
+        # Directories we should never read file contents from (present but not sent to AI)
+        self.EXCLUDE_DIRS = {
+            'venv', '.venv', 'env', '.env', 'node_modules',
+            'site-packages', 'dist', 'build', '.pytest_cache', '__pycache__'
+        }
         
-    def detect(self) -> RunConfig:
-        """Main detection entry point."""
+    def detect(self, detail: bool = False) -> tuple[RunConfig, Dict]:
+        """Main detection entry point.
+        
+        Args:
+            detail: Enable detailed analysis mode (extract full file contents)
+            
+        Returns:
+            Tuple of (RunConfig, analysis_log_dict)
+        """
         config = RunConfig()
+        analysis_log = {}
         
         # Detect entry point files
         config.entry_points = self._find_entry_point_files()
@@ -44,7 +57,11 @@ class EntryPointDetector:
         # Infer runtime dependencies
         self._infer_runtime_deps(config)
         
-        return config
+        # Extract detailed file content if requested
+        if detail and config.entry_points:
+            analysis_log = self._extract_entry_details(config.entry_points)
+        
+        return config, analysis_log
     
     def _find_entry_point_files(self) -> List[EntryPoint]:
         """Find common entry point files."""
@@ -54,6 +71,13 @@ class EntryPointDetector:
             matches = list(self.root.rglob(pattern))
             for m in matches:
                 if self._is_likely_entry_point(m):
+                    # Skip files under excluded dirs (virtualenv, node_modules, site-packages, etc.)
+                    try:
+                        mparts = {p.lower() for p in m.parts}
+                    except Exception:
+                        mparts = set()
+                    if mparts & {d.lower() for d in self.EXCLUDE_DIRS}:
+                        continue
                     ep = EntryPoint(
                         file_path=str(m.relative_to(self.root)),
                         entry_type=self._guess_entry_type(m),
@@ -72,11 +96,18 @@ class EntryPointDetector:
         if not path.is_file():
             return False
         
-        # Skip tests, examples
+        # Skip tests, examples and virtualenv/vendor dirs
         path_str = str(path).lower()
         if any(x in path_str for x in ["test", "example", "demo", "__pycache__"]):
             return False
-        
+        # If path is inside excluded directory names, skip
+        try:
+            parts = {p.lower() for p in path.parts}
+        except Exception:
+            parts = set()
+        if parts & {d.lower() for d in self.EXCLUDE_DIRS}:
+            return False
+
         return True
     
     def _guess_entry_type(self, path: Path) -> str:
@@ -200,20 +231,133 @@ class EntryPointDetector:
                     config.requires_queue = True
             except Exception:
                 pass
+    
+    def _extract_entry_details(self, entry_points: List[EntryPoint]) -> Dict:
+        """Extract detailed content from entry point files with token counting.
+        
+        Args:
+            entry_points: List of detected entry points
+            
+        Returns:
+            Dictionary with file processing statistics and details
+        """
+        # Try to import tiktoken for accurate token counting
+        try:
+            import tiktoken
+            encoding = tiktoken.get_encoding("cl100k_base")
+            use_tiktoken = True
+        except ImportError:
+            use_tiktoken = False
+            print("[WTFE] Warning: tiktoken not installed, using character-based approximation", file=sys.stderr)
+        
+        # Load config
+        config_path = Path(__file__).parent.parent / 'wtfe_readme' / 'config.yaml'
+        detail_max_tokens = 8000
+        try:
+            import yaml
+            with open(config_path, 'r', encoding='utf-8') as f:
+                cfg = yaml.safe_load(f)
+                detail_max_tokens = cfg.get('detail_max_tokens', 8000)
+        except:
+            pass
+        
+        files_processed = 0
+        files_full_content = 0
+        files_downgraded = 0
+        total_tokens = 0
+        downgraded_tokens = 0
+        files_details = []
+        
+        for ep in entry_points:
+            try:
+                file_path = self.root / ep.file_path
+                if not file_path.exists():
+                    continue
+
+                # Skip reading files that are inside excluded dirs (virtualenv / site-packages / node_modules)
+                try:
+                    fparts = {p.lower() for p in file_path.parts}
+                except Exception:
+                    fparts = set()
+                if fparts & {d.lower() for d in self.EXCLUDE_DIRS}:
+                    files_processed += 1
+                    files_details.append({
+                        "file": ep.file_path,
+                        "mode": "excluded",
+                        "tokens": 0,
+                        "reason": "Excluded directory (virtualenv/vendor)"
+                    })
+                    continue
+
+                files_processed += 1
+
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                
+                # Count tokens
+                if use_tiktoken:
+                    tokens = len(encoding.encode(content))
+                else:
+                    # Approximate: ~4 characters per token
+                    tokens = len(content) // 4
+                
+                mode = "full"
+                reason = ""
+                
+                if tokens > detail_max_tokens:
+                    # Downgrade to snippet mode
+                    lines = content.split('\n')
+                    if len(lines) > 150:
+                        snippet = '\n'.join(lines[:100] + ['...'] + lines[-50:])
+                        if use_tiktoken:
+                            tokens = len(encoding.encode(snippet))
+                        else:
+                            tokens = len(snippet) // 4
+                        mode = "snippet"
+                        reason = f"File too large ({tokens} tokens > {detail_max_tokens} limit)"
+                        files_downgraded += 1
+                        downgraded_tokens += tokens
+                    else:
+                        files_full_content += 1
+                else:
+                    files_full_content += 1
+                
+                total_tokens += tokens
+                
+                files_details.append({
+                    "file": ep.file_path,
+                    "mode": mode,
+                    "tokens": tokens,
+                    "reason": reason
+                })
+                
+            except Exception as e:
+                print(f"[WTFE] Warning: Failed to process {ep.file_path}: {e}", file=sys.stderr)
+        
+        return {
+            "files_processed": files_processed,
+            "files_full_content": files_full_content,
+            "files_downgraded": files_downgraded,
+            "total_tokens": total_tokens,
+            "downgraded_tokens": downgraded_tokens,
+            "files_details": files_details
+        }
 
 
 def main():
     """CLI for testing."""
     if len(sys.argv) < 2:
-        print("Usage: python wtfe_run.py <project_dir>")
+        print("Usage: python wtfe_run.py <project_dir> [--detail]")
         sys.exit(1)
     
     project_dir = sys.argv[1]
+    detail = '--detail' in sys.argv
+    
     detector = EntryPointDetector(project_dir)
-    config = detector.detect()
+    config, analysis_log = detector.detect(detail=detail)
     
     # Print results
-    print(json.dumps({
+    result = {
         "entry_points": [
             {
                 "file": ep.file_path,
@@ -230,7 +374,12 @@ def main():
             "requires_cache": config.requires_cache,
             "requires_queue": config.requires_queue
         }
-    }, indent=2, ensure_ascii=False))
+    }
+    
+    if analysis_log:
+        result["analysis_log"] = analysis_log
+    
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -168,12 +168,24 @@ You are an expert technical writer. Based on the following project analysis data
 """)
     
     # 添加入口点信息
-    if entry_points.get('entry_points'):
+    entry_point_list = entry_points.get('entry_points', [])
+    if entry_point_list:
+        # Use inferred commands for better user experience
+        inferred_commands = []
+        for ep in entry_point_list:
+            cmd = ep.get('command', '')
+            if cmd:
+                inferred_commands.append(cmd)
+        
         prompt_parts.append(f"""## 运行入口点
 
-{json.dumps(entry_points, indent=2, ensure_ascii=False)}
+检测到的入口点：
+{json.dumps(entry_point_list, indent=2, ensure_ascii=False)}
 
-**如何运行**：基于检测到的入口点，生成明确的运行命令。
+推荐的运行命令：
+{chr(10).join('- `' + cmd + '`' for cmd in inferred_commands) if inferred_commands else '（请根据入口点类型推断）'}
+
+**注意**：在生成README时，应将这些命令转换为用户友好的"快速开始"部分。
 """)
     
     # 添加上下文信号

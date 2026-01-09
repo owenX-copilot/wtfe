@@ -1,6 +1,6 @@
 api_key: your_api_key_here
 backup_existing: true
-base_url: https://api.siliconflow.cn/v1
+base_url: https://api.deepseek.com
 cache_enabled: false
 cache_ttl: 86400
 enable_thinking: false
@@ -9,7 +9,7 @@ include_badges: true
 include_toc: true
 language: zh-cn
 max_tokens: 4096
-model: Pro/deepseek-ai/DeepSeek-V3.2
+model: deepseek-chat
 output_file: README.md
 overwrite: false
 provider: openai
@@ -20,3 +20,8 @@ temperature: 0.7
 thinking_budget: 4096
 timeout: 60
 top_p: 0.9
+
+# Detail mode settings
+detail_extraction: false  # Enable by default in analysis phase
+detail_max_tokens: 8000   # Maximum tokens for full file content
+detail_warn_threshold: 6000  # Warning threshold for large files

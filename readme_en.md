@@ -124,6 +124,29 @@ language: en  # zh-cn | en
 2. **Author Intent First**: If project has existing README, use it as highest-weight reference
 3. **Zero-dependency Analysis**: Pure static analysis, no code execution
 4. **Incremental & Cacheable**: Reuse analysis results for unchanged files
+5. **Privacy Protection**: By default, only sends structured summaries to AI, not source code content
+
+### Privacy & Detail Mode
+
+**Default Mode (Minimal Exposure)**:
+- WTFE sends only project structure summaries, file lists, and detected entry point types to AI
+- No source code file contents are uploaded
+- Suitable for private projects or privacy-sensitive scenarios
+
+**Detail Mode (`--detail` or `-d`)**:
+- When enabled, WTFE reads entry file contents and sends them with analysis data to AI
+- Uses **Token Budget Control**:
+  - If entry file < 8000 tokens: Sends full content, AI can generate precise startup commands
+  - If entry file > 8000 tokens: Auto-downgrades to snippet extraction (first 100 + last 50 lines) with accuracy warning
+- Usage: `python wtfe.py --detail ./your-project`
+- Recommended for: Learning projects, sample code, scenarios requiring accurate startup instructions
+
+**When to Use Detail Mode**:
+- ✅ Public/open-source projects
+- ✅ Learning code (tutorials, demos)
+- ✅ Need AI to provide accurate startup commands and parameters
+- ❌ Private/commercial projects (unless privacy risk assessed)
+- ❌ Codebases containing sensitive information
 
 ## Example Output
 
@@ -197,6 +220,26 @@ wtfe/
 - Does not understand business logic
 - Generated README requires human review
 - AI cost depends on project size (small projects < $0.01)
+
+## Supported Programming Languages
+
+The wtfe_file module supports analyzing the following **11** programming languages and formats:
+
+| Language | Extensions | Support |
+|----------|-----------|---------|
+| Python | `.py` | Imports, functions, classes, decorators, main module |
+| JavaScript | `.js` | Imports, exports, functions, classes, variables |
+| TypeScript | `.ts` | Type definitions, interfaces, imports, exports |
+| Java | `.java` | Packages, classes, methods, imports |
+| HTML | `.html` | Tags, scripts, style links |
+| JSON | `.json` | Key-value pairs, nested structures |
+| YAML | `.yaml`, `.yml` | Config keys, nested structures |
+| Dockerfile | `Dockerfile` | FROM, RUN, CMD, ENTRYPOINT, etc. |
+| Makefile | `Makefile` | Targets, dependencies, commands |
+| Markdown | `.md` | Headings, code blocks, links |
+| Jupyter Notebook | `.ipynb` | Code cells, Markdown cells |
+
+**Extensible**: Support for other languages can be added by implementing new extractor modules (e.g., Go, Rust, PHP, etc.).
 
 ## License
 
