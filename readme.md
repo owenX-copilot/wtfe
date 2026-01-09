@@ -200,4 +200,6 @@ wtfe/
 
 ## License
 
-MIT
+MIT（见 LICENSE 文件，SPDX: MIT）
+
+本项目采用 MIT 许可证，详见仓库根目录的 `LICENSE` 文件以获取完整条款。
