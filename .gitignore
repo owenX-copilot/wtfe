@@ -60,3 +60,6 @@ dmypy.json
 # WTFE API服务文件（不开放源代码）
 app.py
 wtfe-api/
+
+# 部署配置文件（不开放源代码）
+deploy/
