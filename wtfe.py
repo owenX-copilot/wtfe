@@ -116,7 +116,7 @@ def run_module(name, args):
     cmd = [sys.executable, str(wtfe_root/m[name])] + args
     sys.exit(subprocess.run(cmd).returncode)
 
-def run_full(path, detail=False):
+def run_full(path, detail=False, auto_confirm=False):
     Colors.init_windows()
     wtfe_root = get_wtfe_root()
     if not check_api_key(): sys.exit(1)
@@ -140,6 +140,16 @@ def run_full(path, detail=False):
         sys.exit(1)
     spinner.stop(f'{Colors.GREEN}Analysis done{Colors.RESET}')
     
+    # Save analysis payload to file so user can review (privacy safeguard)
+    project_root = Path(path)
+    pending_path = project_root / '.wtfe_pending_analysis.json'
+    try:
+        with pending_path.open('w', encoding='utf-8') as pf:
+            pf.write(r.stdout)
+        print(f"[WTFE] Analysis payload written to: {pending_path}")
+    except Exception as e:
+        print(f"[WTFE] Warning: Failed to write analysis payload to {pending_path}: {e}")
+
     # Parse analysis JSON to extract log
     analysis_log = {}
     try:
@@ -147,10 +157,33 @@ def run_full(path, detail=False):
         analysis_log = analysis_json.get('analysis_log', {})
     except:
         pass
-    
+
+    # Ask for user confirmation before sending to AI unless auto_confirm is True
+    if not auto_confirm:
+        print('\nPlease review the analysis payload at:', pending_path)
+        try:
+            yn = input('Send analysis to AI for README generation? [y/N]: ').strip().lower()
+        except EOFError:
+            yn = 'n'
+        if yn != 'y':
+            print('[WTFE] Aborted by user. Analysis payload saved; README generation skipped.')
+            # still print summary
+            print(f'\n{Colors.BOLD}[WTFE] Analysis Summary{Colors.RESET}')
+            print('=' * 60)
+            print(f'Mode: {Colors.CYAN}{analysis_log.get("mode", "unknown").upper()}{Colors.RESET}')
+            print(f'Modules executed: {", ".join(analysis_log.get("modules", {}).keys())}')
+            print('=' * 60 + '\n')
+            return
+
+    # Read the payload from file (ensures user's reviewed content is sent)
+    try:
+        payload = pending_path.read_text(encoding='utf-8')
+    except Exception:
+        payload = r.stdout
+
     spinner = Spinner('Generating README')
     spinner.start()
-    r2 = subprocess.run([sys.executable, str(wtfe_root/'wtfe_readme'/'wtfe_readme.py'), '-'], input=r.stdout, text=True, capture_output=True)
+    r2 = subprocess.run([sys.executable, str(wtfe_root/'wtfe_readme'/'wtfe_readme.py'), '-'], input=payload, text=True, capture_output=True)
     if r2.returncode != 0:
         spinner.stop(f'{Colors.RED}Generation failed{Colors.RESET}')
         print(r2.stderr, file=sys.stderr)
@@ -191,6 +224,7 @@ def main():
     
     detail = False
     path_arg = None
+    auto_confirm = False
     
     if sys.argv[1] in ['-m', '--module']:
         if len(sys.argv) < 3:
@@ -198,10 +232,11 @@ def main():
             sys.exit(1)
         run_module(sys.argv[2], sys.argv[3:])
     elif sys.argv[1] in ['-h', '--help']:
-        print('Usage: python wtfe.py [--detail] <project_path>')
+        print('Usage: python wtfe.py [--detail] [-a|--auto-confirm] <project_path>')
         print('       python wtfe.py -m <module> <args>')
         print('\nOptions:')
         print('  --detail, -d    Enable detailed analysis (includes entry file contents for AI)')
+        print('  -a, --auto-confirm   Automatically send analysis payload to AI (no prompt)')
         sys.exit(0)
     else:
         # Parse flags
@@ -209,6 +244,8 @@ def main():
         for arg in args:
             if arg in ['--detail', '-d']:
                 detail = True
+            elif arg in ['-a', '--auto-confirm']:
+                auto_confirm = True
             elif not arg.startswith('-'):
                 path_arg = arg
         
@@ -216,7 +253,7 @@ def main():
             print('Error: Missing project path', file=sys.stderr)
             sys.exit(1)
         
-        run_full(path_arg, detail=detail)
+        run_full(path_arg, detail=detail, auto_confirm=auto_confirm)
 
 if __name__ == '__main__':
     main()

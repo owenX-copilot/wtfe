@@ -27,6 +27,8 @@ class Evidence:
     location: str  # file:line or file:line-line
     snippet: str  # actual code/text
     signal_type: str  # e.g., "import", "function_def", "network_call"
+    lineno: int = None
+    end_lineno: int = None
     weight: float = 1.0  # confidence weight
 
 
@@ -68,6 +70,8 @@ class FileFact:
                     "location": e.location,
                     "snippet": e.snippet,
                     "signal_type": e.signal_type,
+                    "lineno": e.lineno,
+                    "end_lineno": e.end_lineno,
                     "weight": e.weight
                 } for e in self.evidence
             ],

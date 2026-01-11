@@ -78,6 +78,8 @@ class FolderAnalyzer:
                 try:
                     sub_analyzer = FolderAnalyzer(str(item), recursive=True)
                     sub_summary = sub_analyzer.analyze()
+                    # Merge subfolder facts into this analyzer so parent aggregates all files
+                    self.facts.extend(sub_analyzer.facts)
                     self.subfolder_summaries.append(sub_summary)
                 except Exception as e:
                     print(f"Warning: Failed to analyze subfolder {item.name}: {e}", file=sys.stderr)

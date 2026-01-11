@@ -91,7 +91,8 @@ if __name__ == "__main__":
 
         # Check structures
         expected_classes = ["TestClass"]
-        expected_functions = ["__init__", "greet", "calculate_sum", "main"]
+        # module-level functions only (methods removed from top-level functions)
+        expected_functions = ["calculate_sum", "main"]
 
         if all(cls in fact.structures.get("classes", []) for cls in expected_classes):
             print("✓ Classes extracted correctly")
