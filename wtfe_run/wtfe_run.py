@@ -88,8 +88,23 @@ class EntryPointDetector:
         
         # Also check for __main__ in Python files
         entries.extend(self._find_python_main())
-        
-        return entries
+
+        # De-duplicate entries by file_path: keep the entry with higher confidence
+        dedup: Dict[str, EntryPoint] = {}
+        for ep in entries:
+            key = ep.file_path
+            if key not in dedup:
+                dedup[key] = ep
+            else:
+                # Prefer higher confidence; if equal, prefer entry_type == 'main'
+                existing = dedup[key]
+                if ep.confidence > existing.confidence:
+                    dedup[key] = ep
+                elif ep.confidence == existing.confidence:
+                    if ep.entry_type == 'main' and existing.entry_type != 'main':
+                        dedup[key] = ep
+
+        return list(dedup.values())
     
     def _is_likely_entry_point(self, path: Path) -> bool:
         """Check if file looks like an entry point."""
@@ -303,7 +318,6 @@ class EntryPointDetector:
                 
                 mode = "full"
                 reason = ""
-                
                 if tokens > detail_max_tokens:
                     # Downgrade to snippet mode
                     lines = content.split('\n')
@@ -321,14 +335,33 @@ class EntryPointDetector:
                         files_full_content += 1
                 else:
                     files_full_content += 1
-                
+
+                # Determine content to include in return (respecting size threshold)
+                try:
+                    chars_threshold = int(detail_max_tokens * 4)
+                except Exception:
+                    chars_threshold = detail_max_tokens * 4
+
+                content_for_return = ""
+                if mode == "snippet":
+                    # use snippet variable if created, else create safe snippet
+                    try:
+                        snippet
+                    except NameError:
+                        lines = content.split('\n')
+                        snippet = '\n'.join(lines[:100] + ['...'] + lines[-50:]) if len(lines) > 150 else content
+                    content_for_return = snippet[:chars_threshold] + ("\n...TRUNCATED..." if len(snippet) > chars_threshold else "")
+                elif mode == "full":
+                    content_for_return = content[:chars_threshold] + ("\n...TRUNCATED..." if len(content) > chars_threshold else "")
+
                 total_tokens += tokens
-                
+
                 files_details.append({
                     "file": ep.file_path,
                     "mode": mode,
                     "tokens": tokens,
-                    "reason": reason
+                    "reason": reason,
+                    "content": content_for_return
                 })
                 
             except Exception as e:

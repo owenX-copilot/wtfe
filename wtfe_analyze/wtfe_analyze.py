@@ -115,8 +115,8 @@ class ProjectAnalyzer:
             
             analyzer = FolderAnalyzer(str(self.project_path))
             summary = analyzer.analyze()
-            
-            return {
+
+            out = {
                 "path": summary.path,
                 "name": summary.name,
                 "files": summary.files,
@@ -126,6 +126,118 @@ class ProjectAnalyzer:
                 "external_deps": summary.external_deps,
                 "confidence": summary.confidence
             }
+
+            # Build compressed per-file facts to include in prompts (concise summary)
+            try:
+                # load configuration defaults
+                cfg_path = self.wtfe_root / 'wtfe_readme' / 'config.yaml'
+                max_files = 20
+                max_chars_per_item = 800
+                max_total_chars = 10000
+                if cfg_path.exists():
+                    try:
+                        import yaml
+                        with open(cfg_path, 'r', encoding='utf-8') as cf:
+                            cfg = yaml.safe_load(cf) or {}
+                            max_files = int(cfg.get('max_compressed_files', max_files))
+                            max_chars_per_item = int(cfg.get('max_chars_per_item', max_chars_per_item))
+                            max_total_chars = int(cfg.get('max_compressed_chars', max_total_chars))
+                    except Exception:
+                        pass
+
+                file_facts = []
+                total_chars = 0
+                for fact in analyzer.facts:
+                    # Skip markdown files from compressed facts — README(s) handled by author_intent
+                    try:
+                        suffix = Path(fact.path).suffix.lower()
+                    except Exception:
+                        suffix = ''
+                    if suffix in {'.md', '.markdown'}:
+                        continue
+                    if len(file_facts) >= max_files or total_chars >= max_total_chars:
+                        break
+
+                    # skip external / likely third-party by simple heuristic (path contains site-packages or node_modules)
+                    try:
+                        p = Path(fact.path)
+                        parts = {pp.lower() for pp in p.parts}
+                    except Exception:
+                        parts = set()
+                    if parts & {"site-packages", "node_modules", "dist", "build"}:
+                        continue
+
+                    # one-line doc: prefer module_doc then first class/function doc
+                    one_line = None
+                    try:
+                        one_line = (fact.signals or {}).get('module_doc')
+                    except Exception:
+                        one_line = None
+                    if not one_line:
+                        try:
+                            structs = fact.structures or {}
+                            if structs.get('classes'):
+                                one_line = structs['classes'][0].get('doc')
+                            elif structs.get('functions'):
+                                one_line = structs['functions'][0].get('doc')
+                        except Exception:
+                            one_line = None
+
+                    # top defs
+                    top_defs = []
+                    try:
+                        structs = fact.structures or {}
+                        for c in structs.get('classes', [])[:2]:
+                            top_defs.append({"name": c.get('name'), "signature": None, "doc": (c.get('doc') or '')[:140]})
+                        for fct in structs.get('functions', [])[:3]:
+                            top_defs.append({"name": fct.get('name'), "signature": fct.get('signature'), "doc": (fct.get('doc') or '')[:140]})
+                    except Exception:
+                        top_defs = []
+
+                    # top calls
+                    top_calls = []
+                    try:
+                        calls = (fact.signals or {}).get('calls_sample', [])
+                        for c in calls[:3]:
+                            top_calls.append(c.get('sample') if isinstance(c, dict) else str(c))
+                    except Exception:
+                        top_calls = []
+
+                    # estimate size (chars)
+                    est_size = 0
+                    try:
+                        p = Path(fact.path)
+                        if p.exists():
+                            est_size = len(p.read_text(encoding='utf-8', errors='ignore'))
+                    except Exception:
+                        est_size = 0
+
+                    item = {
+                        "path": fact.path,
+                        "filename": fact.filename,
+                        "roles": [r.value for r in fact.roles] if fact.roles else [],
+                        "one_line": (one_line or '')[:140],
+                        "top_defs": top_defs,
+                        "top_calls": top_calls,
+                        "calls_from_core": fact.filename in summary.core_files,
+                        "est_size": est_size,
+                        "confidence": getattr(fact, 'confidence', 0.0)
+                    }
+
+                    approx_chars = len(item['one_line']) + sum(len(d.get('doc','')) for d in top_defs) + sum(len(c) for c in top_calls)
+                    approx_chars = min(approx_chars, max_chars_per_item)
+                    if total_chars + approx_chars > max_total_chars and file_facts:
+                        break
+
+                    file_facts.append(item)
+                    total_chars += approx_chars
+
+                out['file_facts_compressed'] = file_facts
+            except Exception:
+                # non-fatal; don't attach compressed facts on error
+                pass
+
+            return out
         except Exception as e:
             print(f"[WTFE] Warning: Folder analysis failed: {e}", file=sys.stderr)
             return {"error": str(e)}
