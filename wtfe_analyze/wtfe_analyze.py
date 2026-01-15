@@ -14,7 +14,7 @@ import sys
 import os
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 # Add parent directory to path for imports
@@ -63,9 +63,9 @@ class ProjectAnalyzer:
         folder_summary = self._run_folder_analysis()
         analysis_log["modules"]["folder"] = "completed"
         
-        # Pipeline B1: Entry point detection
+        # Pipeline B1: Entry point detection (using folder analysis results)
         print("[WTFE] Running Pipeline B: Entry point detection...", file=sys.stderr)
-        run_config, entry_log = self._run_entry_point_analysis()
+        run_config, entry_log = self._run_entry_point_analysis(folder_summary)
         analysis_log["modules"]["entry_detection"] = "completed"
         if entry_log:
             analysis_log["entry_details"] = entry_log
@@ -242,9 +242,12 @@ class ProjectAnalyzer:
             print(f"[WTFE] Warning: Folder analysis failed: {e}", file=sys.stderr)
             return {"error": str(e)}
     
-    def _run_entry_point_analysis(self) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    def _run_entry_point_analysis(self, folder_summary: Optional[Dict[str, Any]] = None) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """Run wtfe_run analysis.
-        
+
+        Args:
+            folder_summary: Optional result from folder analysis
+
         Returns:
             Tuple of (config_dict, analysis_log_dict)
         """
@@ -252,11 +255,11 @@ class ProjectAnalyzer:
             run_module_path = self.wtfe_root / 'wtfe_run'
             if str(run_module_path) not in sys.path:
                 sys.path.insert(0, str(run_module_path))
-            
+
             from wtfe_run import EntryPointDetector
-            
+
             detector = EntryPointDetector(str(self.project_path))
-            config, entry_log = detector.detect(detail=self.detail)
+            config, entry_log = detector.detect(detail=self.detail, folder_analysis_result=folder_summary)
             
             config_dict = {
                 "entry_points": [

@@ -3,7 +3,7 @@ import os
 import json
 import re
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import sys
 
 # Add parent to path for imports
@@ -30,20 +30,22 @@ class EntryPointDetector:
             'site-packages', 'dist', 'build', '.pytest_cache', '__pycache__'
         }
         
-    def detect(self, detail: bool = False) -> tuple[RunConfig, Dict]:
+    def detect(self, detail: bool = False, folder_analysis_result: Optional[Dict[str, Any]] = None) -> tuple[RunConfig, Dict[str, Any]]:
         """Main detection entry point.
-        
+
         Args:
             detail: Enable detailed analysis mode (extract full file contents)
-            
+            folder_analysis_result: Optional result from wtfe_folder analysis
+                If provided, uses pre-analyzed file list instead of scanning
+
         Returns:
             Tuple of (RunConfig, analysis_log_dict)
         """
         config = RunConfig()
         analysis_log = {}
-        
+
         # Detect entry point files
-        config.entry_points = self._find_entry_point_files()
+        config.entry_points = self._find_entry_point_files(folder_analysis_result)
         
         # Parse Makefile
         config.makefile_targets = self._parse_makefile()
@@ -63,31 +65,67 @@ class EntryPointDetector:
         
         return config, analysis_log
     
-    def _find_entry_point_files(self) -> List[EntryPoint]:
-        """Find common entry point files."""
+    def _find_entry_point_files(self, folder_analysis_result: Optional[Dict[str, Any]] = None) -> List[EntryPoint]:
+        """Find common entry point files.
+
+        Args:
+            folder_analysis_result: Optional result from wtfe_folder analysis
+                If provided, uses pre-analyzed file list instead of scanning
+        """
         entries = []
-        
-        for pattern in self.COMMON_ENTRY_FILES:
-            matches = list(self.root.rglob(pattern))
-            for m in matches:
-                if self._is_likely_entry_point(m):
-                    # Skip files under excluded dirs (virtualenv, node_modules, site-packages, etc.)
-                    try:
-                        mparts = {p.lower() for p in m.parts}
-                    except Exception:
-                        mparts = set()
-                    if mparts & {d.lower() for d in self.EXCLUDE_DIRS}:
-                        continue
-                    ep = EntryPoint(
-                        file_path=str(m.relative_to(self.root)),
-                        entry_type=self._guess_entry_type(m),
-                        confidence=0.7
-                    )
-                    ep.command = self._guess_command(m)
+
+        # Get file list: either from folder analysis or by scanning
+        if folder_analysis_result:
+            # Use pre-analyzed file list
+            all_files = folder_analysis_result.get("files", [])
+            core_files = folder_analysis_result.get("core_files", [])
+
+            # First check core files (high priority)
+            for file_str in core_files:
+                file_path = Path(file_str)
+                if self._is_likely_entry_point(file_path):
+                    ep = self._create_entry_point(file_path)
                     entries.append(ep)
-        
-        # Also check for __main__ in Python files
-        entries.extend(self._find_python_main())
+
+            # Then check all files for common entry patterns
+            for file_str in all_files:
+                file_path = Path(file_str)
+                # Skip if already added as core file
+                if file_str in core_files:
+                    continue
+
+                if file_path.name in self.COMMON_ENTRY_FILES:
+                    if self._is_likely_entry_point(file_path):
+                        ep = self._create_entry_point(file_path)
+                        entries.append(ep)
+
+            # Check Python files with __main__ guard
+            python_files = [Path(f) for f in all_files if Path(f).suffix == '.py']
+            entries.extend(self._find_python_main_from_list(python_files))
+
+        else:
+            # Original scanning logic (backward compatibility)
+            for pattern in self.COMMON_ENTRY_FILES:
+                matches = list(self.root.rglob(pattern))
+                for m in matches:
+                    if self._is_likely_entry_point(m):
+                        # Skip files under excluded dirs
+                        try:
+                            mparts = {p.lower() for p in m.parts}
+                        except Exception:
+                            mparts = set()
+                        if mparts & {d.lower() for d in self.EXCLUDE_DIRS}:
+                            continue
+                        ep = EntryPoint(
+                            file_path=str(m.relative_to(self.root)),
+                            entry_type=self._guess_entry_type(m),
+                            confidence=0.7
+                        )
+                        ep.command = self._guess_command(m)
+                        entries.append(ep)
+
+            # Also check for __main__ in Python files
+            entries.extend(self._find_python_main())
 
         # De-duplicate entries by file_path: keep the entry with higher confidence
         dedup: Dict[str, EntryPoint] = {}
@@ -105,22 +143,79 @@ class EntryPointDetector:
                         dedup[key] = ep
 
         return list(dedup.values())
-    
+
+    def _create_entry_point(self, file_path: Path) -> EntryPoint:
+        """Create EntryPoint object from file path."""
+        ep = EntryPoint(
+            file_path=str(file_path.relative_to(self.root)),
+            entry_type=self._guess_entry_type(file_path),
+            confidence=0.7  # Fixed confidence for now
+        )
+        ep.command = self._guess_command(file_path)
+        return ep
+
+    def _find_python_main_from_list(self, file_paths: List[Path]) -> List[EntryPoint]:
+        """Find Python files with if __name__ == '__main__' from a list."""
+        entries = []
+
+        for py_file in file_paths:
+            if py_file.suffix != '.py':
+                continue
+
+            if not self._is_likely_entry_point(py_file):
+                continue
+
+            try:
+                content = py_file.read_text(encoding="utf-8", errors="ignore")
+                if re.search(r"if\s+__name__\s*==\s*['\"]__main__['\"]", content):
+                    ep = EntryPoint(
+                        file_path=str(py_file.relative_to(self.root)),
+                        entry_type="main",
+                        command=f"python {py_file.relative_to(self.root)}",
+                        confidence=0.8
+                    )
+                    entries.append(ep)
+            except Exception:
+                pass
+
+        return entries
+
     def _is_likely_entry_point(self, path: Path) -> bool:
         """Check if file looks like an entry point."""
         if not path.is_file():
             return False
-        
-        # Skip tests, examples and virtualenv/vendor dirs
-        path_str = str(path).lower()
-        if any(x in path_str for x in ["test", "example", "demo", "__pycache__"]):
-            return False
-        # If path is inside excluded directory names, skip
+
+        # Check if path is inside excluded directories
         try:
             parts = {p.lower() for p in path.parts}
         except Exception:
             parts = set()
         if parts & {d.lower() for d in self.EXCLUDE_DIRS}:
+            return False
+
+        # Get filename and parent directory for more precise checking
+        filename = path.name.lower()
+        parent_dir = path.parent.name.lower() if path.parent.name else ""
+
+        # Skip test files (more precise checking)
+        # 1. Files in test directories
+        if parent_dir in ["tests", "test", "__tests__", "spec"]:
+            return False
+
+        # 2. Files with test patterns in name
+        if filename.startswith("test_") or filename.endswith("_test.py"):
+            return False
+
+        # 3. Example/demo files in example/demo directories
+        if parent_dir in ["examples", "example", "demos", "demo"]:
+            # But allow files that look like entry points in example directories
+            # (e.g., example/main.py should still be considered)
+            if filename in ["main.py", "app.py", "server.py", "run.py"]:
+                return True
+            return False
+
+        # Skip __pycache__ and other cache directories
+        if "__pycache__" in parts:
             return False
 
         return True

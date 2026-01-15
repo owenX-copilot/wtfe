@@ -67,3 +67,6 @@ deploy/
 # docker打包文件 （不开放源代码）
 .dockerignore
 *.tar
+
+# Claude code
+.claude
