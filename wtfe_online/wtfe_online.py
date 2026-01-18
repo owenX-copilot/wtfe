@@ -298,7 +298,8 @@ class WTFEOnlineClient:
                 print(f"已创建压缩文件: {tar_path}")
 
                 try:
-                    # 上传文件
+                    # 上传文件 - 确保文件在请求完成后关闭
+                    result = None
                     with open(tar_path, 'rb') as f:
                         files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
 
@@ -314,10 +315,14 @@ class WTFEOnlineClient:
                             params=params
                         )
 
-                        return result
+                    return result
                 finally:
-                    # 清理临时文件
-                    os.unlink(tar_path)
+                    # 清理临时文件 - 确保文件已关闭
+                    try:
+                        if os.path.exists(tar_path):
+                            os.unlink(tar_path)
+                    except Exception as e:
+                        print(f"警告：无法删除临时文件 {tar_path}: {e}")
         else:
             # 如果是文件，直接上传
             print(f"上传文件: {project_path}")
@@ -344,7 +349,7 @@ class WTFEOnlineClient:
                     params=params
                 )
 
-                return result
+            return result
 
 
 def interactive_register():

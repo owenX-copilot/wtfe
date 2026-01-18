@@ -262,7 +262,7 @@ wtfe/
 
 ### Online Service Limitations
 - **Usage Limits**: Maximum 10 calls per day per API key
-- **File Size**: Maximum upload size 100MB
+- **File Size**: Maximum upload size 2GB
 - **Authentication Required**: Registration and email verification required
 - **API Keys**: Maximum 2 API keys per user
 - **Privacy Considerations**: Project files are uploaded to server for analysis
