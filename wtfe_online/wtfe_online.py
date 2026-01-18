@@ -74,12 +74,14 @@ class WTFEOnlineClient:
         """用户登录"""
         print(f"正在登录: {username}")
 
+        # 使用OAuth2表单格式
         data = {
             "username": username,
             "password": password
         }
 
-        result = self._make_request("POST", f"{API_V1_PREFIX}/auth/login", json=data)
+        # 使用表单数据而不是JSON
+        result = self._make_request("POST", f"{API_V1_PREFIX}/auth/login", data=data)
 
         self.access_token = result.get("access_token")
         print(f"✓ 登录成功！")

@@ -46,6 +46,29 @@ python wtfe.py -m analyze example/example_folder # 完整分析
 python wtfe.py --help
 ```
 
+### 使用在线服务（可选）
+
+WTFE 提供了可选的在线API服务，支持用户认证和API密钥管理：
+
+```bash
+# 用户注册
+python wtfe.py auth register
+
+# 用户登录
+python wtfe.py auth login
+
+# 创建API密钥
+python wtfe.py auth api-key
+
+# 查看用户信息
+python wtfe.py auth user-info
+
+# 重新发送验证邮件
+python wtfe.py auth resend-verification
+```
+
+**注意**：在线服务是可选的，推荐使用本地CLI自建分析环境以保护隐私和降低成本。
+
 ## 功能模块
 
 | 模块 | 功能 | 状态 |
@@ -57,6 +80,14 @@ python wtfe.py --help
 | **wtfe_intent** | 提取现有README/LICENSE/CHANGELOG（作者意图） | ✅ |
 | **wtfe_analyze** | 统一编排所有模块，输出结构化JSON | ✅ |
 | **wtfe_readme** | AI生成自然语言README文档 | ✅ |
+| **wtfe_online** | 在线API服务，支持用户认证和API密钥管理 | ✅ |
+
+### 在线服务特性
+- **用户认证系统**：注册、登录、邮箱验证
+- **API密钥管理**：创建、管理API密钥，每个用户最多2个密钥
+- **使用限制**：每个API密钥每天最多10次调用
+- **隐私保护**：所有分析数据通过HTTPS加密传输
+- **免费额度**：提供有限的免费调用额度（防止滥用）
 
 ## 配置说明
 
@@ -220,6 +251,8 @@ wtfe/
 - 不理解业务逻辑
 - 生成的README需人工审核
 - AI成本取决于项目规模（小项目 < ¥0.01）
+- 在线服务有调用限制（每个API密钥每天最多10次调用）
+- 推荐使用本地CLI自建分析环境以保护隐私和降低成本
 
 ## 支持的编程语言
 

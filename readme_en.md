@@ -46,6 +46,29 @@ python wtfe.py -m analyze example/example_folder # Full analysis
 python wtfe.py --help
 ```
 
+### Use Online Service (Optional)
+
+WTFE provides an optional online API service with user authentication and API key management:
+
+```bash
+# User registration
+python wtfe.py auth register
+
+# User login
+python wtfe.py auth login
+
+# Create API key
+python wtfe.py auth api-key
+
+# View user information
+python wtfe.py auth user-info
+
+# Resend verification email
+python wtfe.py auth resend-verification
+```
+
+**Note**: The online service is optional. We recommend using the local CLI self-hosted analysis environment for privacy protection and cost savings.
+
 ## Modules
 
 | Module | Function | Status |
@@ -57,6 +80,14 @@ python wtfe.py --help
 | **wtfe_intent** | Extracts existing README/LICENSE/CHANGELOG (author intent) | ✅ |
 | **wtfe_analyze** | Orchestrates all modules, outputs structured JSON | ✅ |
 | **wtfe_readme** | AI-generated natural language README | ✅ |
+| **wtfe_online** | Online API service with user authentication and API key management | ✅ |
+
+### Online Service Features
+- **User Authentication System**: Registration, login, email verification
+- **API Key Management**: Create and manage API keys, up to 2 keys per user
+- **Usage Limits**: Maximum 10 calls per day per API key
+- **Privacy Protection**: All analysis data transmitted via HTTPS encryption
+- **Free Tier**: Limited free calls available (to prevent abuse)
 
 ## Configuration
 
@@ -220,6 +251,8 @@ wtfe/
 - Does not understand business logic
 - Generated README requires human review
 - AI cost depends on project size (small projects < $0.01)
+- Online service has usage limits (maximum 10 calls per day per API key)
+- Recommended to use local CLI self-hosted analysis environment for privacy protection and cost savings
 
 ## Supported Programming Languages
 
