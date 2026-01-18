@@ -13,8 +13,8 @@ import requests
 from typing import Optional, Dict, Any
 from getpass import getpass
 
-# API地址写死为127.0.0.1:9999
-API_BASE_URL = "http://127.0.0.1:9999"
+# API地址 - 连接到线上服务
+API_BASE_URL = "https://wtfe.aozai.top"
 API_V1_PREFIX = "/api/v1"
 
 

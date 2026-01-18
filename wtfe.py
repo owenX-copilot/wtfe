@@ -157,7 +157,7 @@ def handle_auth_command(args):
                 config_data = {
                     'wtfe_api_token': result.get("access_token"),
                     'wtfe_api_username': username,
-                    'wtfe_api_url': 'http://127.0.0.1:9999'
+                    'wtfe_api_url': 'https://wtfe.aozai.top'
                 }
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
