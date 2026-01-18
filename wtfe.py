@@ -328,6 +328,7 @@ def run_full(path, detail=False, auto_confirm=False):
     print('=' * 60 + '\n')
 
 def main():
+    global sys
     parser = argparse.ArgumentParser(description='WTFE - Why The Folder Exists')
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
 
@@ -391,15 +392,28 @@ def main():
             elif args.command == 'auth':
                 handle_auth_command(args)
             elif args.command == 'online':
-                print("在线模式 - 使用WTFE API在线服务")
-                print("=" * 50)
-                print("使用方法:")
-                print("  1. 注册: python wtfe.py auth register")
-                print("  2. 登录: python wtfe.py auth login")
-                print("  3. 获取API密钥: python wtfe.py auth api-key")
-                print("  4. 使用在线服务: python wtfe_online/wtfe_online.py <命令>")
-                print("\n注意：在线服务是可选的，本地分析功能依然可用")
-                sys.exit(0)
+                # 在线模式 - 调用wtfe_online.py analyze命令
+                import subprocess
+
+                # 构建命令参数
+                cmd = [sys.executable, str(get_wtfe_root() / 'wtfe_online' / 'wtfe_online.py'), 'analyze', args.path]
+
+                if args.detail:
+                    cmd.append('--detail')
+                if args.api_key:
+                    # 暂时不支持直接传递API密钥，需要用户交互输入
+                    print("注意：API密钥需要通过交互方式输入")
+                    print("运行命令后，系统会提示输入API密钥")
+
+                # 执行命令
+                try:
+                    subprocess.run(cmd, check=True)
+                except subprocess.CalledProcessError as e:
+                    sys.exit(e.returncode)
+                except FileNotFoundError:
+                    print("错误：wtfe_online模块未找到")
+                    print("请确保wtfe_online/wtfe_online.py文件存在")
+                    sys.exit(1)
             else:
                 parser.print_help()
         else:
@@ -433,15 +447,29 @@ def main():
         elif args.command == 'auth':
             handle_auth_command(args)
         elif args.command == 'online':
-            print("在线模式 - 使用WTFE API在线服务")
-            print("=" * 50)
-            print("使用方法:")
-            print("  1. 注册: python wtfe.py auth register")
-            print("  2. 登录: python wtfe.py auth login")
-            print("  3. 获取API密钥: python wtfe.py auth api-key")
-            print("  4. 使用在线服务: python wtfe_online/wtfe_online.py <命令>")
-            print("\n注意：在线服务是可选的，本地分析功能依然可用")
-            sys.exit(0)
+            # 在线模式 - 调用wtfe_online.py analyze命令
+            import subprocess
+            import sys
+
+            # 构建命令参数
+            cmd = [sys.executable, str(get_wtfe_root() / 'wtfe_online' / 'wtfe_online.py'), 'analyze', args.path]
+
+            if args.detail:
+                cmd.append('--detail')
+            if args.api_key:
+                # 暂时不支持直接传递API密钥，需要用户交互输入
+                print("注意：API密钥需要通过交互方式输入")
+                print("运行命令后，系统会提示输入API密钥")
+
+            # 执行命令
+            try:
+                subprocess.run(cmd, check=True)
+            except subprocess.CalledProcessError as e:
+                sys.exit(e.returncode)
+            except FileNotFoundError:
+                print("错误：wtfe_online模块未找到")
+                print("请确保wtfe_online/wtfe_online.py文件存在")
+                sys.exit(1)
         else:
             parser.print_help()
 

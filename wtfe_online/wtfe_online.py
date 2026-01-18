@@ -215,6 +215,94 @@ class WTFEOnlineClient:
         self.access_token = None
         print("✓ 认证信息已清除")
 
+    def analyze_project(self, project_path: str, detail: bool = False) -> Dict[str, Any]:
+        """
+        分析项目
+
+        Args:
+            project_path: 项目路径
+            detail: 是否启用详细分析模式
+
+        Returns:
+            分析结果
+        """
+        print(f"正在分析项目: {project_path}")
+        if detail:
+            print("详细分析模式已启用")
+
+        # 检查文件或目录是否存在
+        from pathlib import Path
+        path_obj = Path(project_path)
+        if not path_obj.exists():
+            raise FileNotFoundError(f"路径不存在: {project_path}")
+
+        # 如果是目录，需要压缩成tar.gz
+        if path_obj.is_dir():
+            import tempfile
+            import tarfile
+            import os
+
+            print("检测到目录，正在压缩...")
+
+            # 创建临时tar.gz文件
+            with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp_file:
+                tar_path = tmp_file.name
+
+                # 创建tar.gz
+                with tarfile.open(tar_path, 'w:gz') as tar:
+                    tar.add(project_path, arcname=os.path.basename(project_path))
+
+                print(f"已创建压缩文件: {tar_path}")
+
+                try:
+                    # 上传文件
+                    with open(tar_path, 'rb') as f:
+                        files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+
+                        # 构建请求参数
+                        params = {}
+                        if detail:
+                            params['detail'] = 'true'
+
+                        result = self._make_request(
+                            "POST",
+                            f"{API_V1_PREFIX}/analyze-and-generate",
+                            files=files,
+                            params=params
+                        )
+
+                        return result
+                finally:
+                    # 清理临时文件
+                    os.unlink(tar_path)
+        else:
+            # 如果是文件，直接上传
+            print(f"上传文件: {project_path}")
+            with open(project_path, 'rb') as f:
+                # 根据文件扩展名确定MIME类型
+                if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
+                    mime_type = 'application/gzip'
+                elif project_path.endswith('.zip'):
+                    mime_type = 'application/zip'
+                else:
+                    mime_type = 'application/octet-stream'
+
+                files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
+
+                # 构建请求参数
+                params = {}
+                if detail:
+                    params['detail'] = 'true'
+
+                result = self._make_request(
+                    "POST",
+                    f"{API_V1_PREFIX}/analyze-and-generate",
+                    files=files,
+                    params=params
+                )
+
+                return result
+
 
 def interactive_register():
     """交互式注册"""
@@ -269,6 +357,94 @@ def interactive_resend_verification():
     return client.resend_verification_email(email)
 
 
+def interactive_analyze_project():
+    """交互式分析项目"""
+    print("\n=== WTFE 在线项目分析 ===")
+
+    # 获取项目路径
+    project_path = input("项目路径: ").strip()
+    if not project_path:
+        print("错误：项目路径不能为空")
+        sys.exit(1)
+
+    # 询问是否使用详细模式
+    detail_input = input("启用详细分析模式？(y/N): ").strip().lower()
+    detail = detail_input == 'y'
+
+    # 创建客户端
+    client = WTFEOnlineClient()
+
+    # 检查是否有API密钥或访问令牌
+    if not client.api_key and not client.access_token:
+        print("\n需要认证信息")
+        print("1. 使用API密钥")
+        print("2. 使用用户名密码登录")
+        choice = input("选择认证方式 (1/2): ").strip()
+
+        if choice == '1':
+            api_key = input("API密钥: ").strip()
+            client.api_key = api_key
+        elif choice == '2':
+            # 先登录
+            login_result = interactive_login()
+            if login_result.get("access_token"):
+                client.access_token = login_result.get("access_token")
+            else:
+                print("登录失败")
+                sys.exit(1)
+        else:
+            print("无效选择")
+            sys.exit(1)
+
+    # 分析项目
+    try:
+        result = client.analyze_project(project_path, detail=detail)
+
+        # 处理结果
+        if result.get('success'):
+            data = result.get('data', {})
+            content = data.get('content', '')
+
+            print("\n" + "="*60)
+            print("分析完成！")
+            print("="*60)
+
+            # 显示README内容
+            if content:
+                print("\n生成的README内容:")
+                print("-"*40)
+                print(content[:500] + "..." if len(content) > 500 else content)
+                print("-"*40)
+
+                # 询问是否保存到文件
+                save_input = input("\n保存README到文件？(y/N): ").strip().lower()
+                if save_input == 'y':
+                    save_path = input("保存路径 (默认: README.md): ").strip() or "README.md"
+                    try:
+                        with open(save_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                        print(f"✓ README已保存到: {save_path}")
+                    except Exception as e:
+                        print(f"保存失败: {e}")
+            else:
+                print("警告：未生成README内容")
+
+            # 显示元数据
+            metadata = data.get('metadata', {})
+            if metadata:
+                print(f"\n项目: {metadata.get('project', {}).get('name', '未知')}")
+                print(f"生成器: {metadata.get('generator', '未知')}")
+                print(f"格式: {metadata.get('format', '未知')}")
+                print(f"长度: {metadata.get('length', 0)} 字符")
+                print(f"行数: {metadata.get('lines', 0)} 行")
+
+        return result
+
+    except Exception as e:
+        print(f"分析失败: {e}")
+        sys.exit(1)
+
+
 def main():
     """命令行入口"""
     if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help']:
@@ -279,6 +455,10 @@ def main():
         print("  resend-verification 重新发送验证邮件")
         print("  create-api-key      创建API密钥")
         print("  user-info           获取用户信息")
+        print("  analyze             分析项目并生成README")
+        print("\n分析命令示例:")
+        print("  python wtfe_online.py analyze /path/to/project")
+        print("  python wtfe_online.py analyze /path/to/project --detail")
         sys.exit(0 if sys.argv[1] in ['-h', '--help'] else 1)
 
     command = sys.argv[1]
@@ -298,6 +478,111 @@ def main():
         if login_result.get("access_token"):
             client.access_token = login_result.get("access_token")
             client.get_user_info()
+    elif command == "analyze":
+        # 分析项目命令
+        if len(sys.argv) < 3:
+            print("错误：需要提供项目路径")
+            print("用法: python wtfe_online.py analyze <项目路径> [--detail]")
+            sys.exit(1)
+
+        project_path = sys.argv[2]
+        detail = "--detail" in sys.argv or "-d" in sys.argv
+
+        # 创建客户端
+        client = WTFEOnlineClient()
+
+        # 检查是否有API密钥或访问令牌
+        if not client.api_key and not client.access_token:
+            # 尝试从配置文件读取API密钥
+            try:
+                import yaml
+                from pathlib import Path
+                api_config_path = Path(__file__).parent.parent / 'wtfe_api_config.yaml'
+                if api_config_path.exists():
+                    with open(api_config_path, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f) or {}
+                        api_key = config.get('wtfe_api_key')
+                        if api_key:
+                            client.api_key = api_key
+                            print(f"✓ 使用配置文件中的API密钥")
+            except:
+                pass
+
+        # 如果没有认证信息，需要用户提供
+        if not client.api_key and not client.access_token:
+            print("\n需要认证信息")
+            print("1. 使用API密钥")
+            print("2. 使用用户名密码登录")
+            choice = input("选择认证方式 (1/2): ").strip()
+
+            if choice == '1':
+                api_key = input("API密钥: ").strip()
+                client.api_key = api_key
+            elif choice == '2':
+                # 先登录
+                print("\n=== 用户登录 ===")
+                username = input("用户名: ").strip()
+                from getpass import getpass
+                password = getpass("密码: ").strip()
+                login_result = client.login(username, password)
+                if login_result.get("access_token"):
+                    client.access_token = login_result.get("access_token")
+                else:
+                    print("登录失败")
+                    sys.exit(1)
+            else:
+                print("无效选择")
+                sys.exit(1)
+
+        # 分析项目
+        try:
+            result = client.analyze_project(project_path, detail=detail)
+
+            # 处理结果
+            if result.get('success'):
+                data = result.get('data', {})
+                content = data.get('content', '')
+
+                print("\n" + "="*60)
+                print("分析完成！")
+                print("="*60)
+
+                # 显示README内容
+                if content:
+                    # 自动保存到项目目录下的README.md
+                    from pathlib import Path
+                    project_dir = Path(project_path)
+                    if project_dir.is_file():
+                        project_dir = project_dir.parent
+
+                    readme_path = project_dir / "README.md"
+                    try:
+                        with open(readme_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                        print(f"✓ README已保存到: {readme_path}")
+                    except Exception as e:
+                        print(f"保存失败: {e}")
+
+                    # 显示部分内容
+                    print(f"\n生成的README内容 (前500字符):")
+                    print("-"*40)
+                    print(content[:500] + "..." if len(content) > 500 else content)
+                    print("-"*40)
+
+                # 显示元数据
+                metadata = data.get('metadata', {})
+                if metadata:
+                    print(f"\n项目: {metadata.get('project', {}).get('name', '未知')}")
+                    print(f"生成器: {metadata.get('generator', '未知')}")
+                    print(f"格式: {metadata.get('format', '未知')}")
+                    print(f"长度: {metadata.get('length', 0)} 字符")
+                    print(f"行数: {metadata.get('lines', 0)} 行")
+            else:
+                print(f"分析失败: {result.get('message', '未知错误')}")
+
+        except Exception as e:
+            print(f"分析失败: {e}")
+            sys.exit(1)
     else:
         print(f"未知命令: {command}")
         sys.exit(1)
