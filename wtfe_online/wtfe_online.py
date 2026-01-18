@@ -238,11 +238,12 @@ class WTFEOnlineClient:
 
         result = self._make_request("GET", f"{API_V1_PREFIX}/auth/me")
 
-        user = result.get("user", {})
+        # API直接返回用户对象，而不是包含"user"字段的对象
+        user = result
         print(f"✓ 用户信息:")
         print(f"  用户名: {user.get('username')}")
         print(f"  邮箱: {user.get('email')}")
-        print(f"  邮箱已验证: {user.get('email_verified')}")
+        print(f"  邮箱已验证: {user.get('is_verified')}")  # 注意字段名是is_verified，不是email_verified
         print(f"  创建时间: {user.get('created_at')}")
 
         return result
