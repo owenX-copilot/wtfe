@@ -6,6 +6,7 @@ import json
 import time
 import threading
 import yaml
+import argparse
 from pathlib import Path
 from getpass import getpass
 
@@ -116,6 +117,119 @@ def run_module(name, args):
     cmd = [sys.executable, str(wtfe_root/m[name])] + args
     sys.exit(subprocess.run(cmd).returncode)
 
+def handle_auth_command(args):
+    """处理认证相关命令"""
+    # 动态导入在线服务模块
+    try:
+        from wtfe_online.wtfe_online import WTFEOnlineClient
+    except ImportError:
+        print("错误：在线服务模块未找到")
+        print("请确保 wtfe_online/wtfe_online.py 文件存在")
+        sys.exit(1)
+
+    client = WTFEOnlineClient()
+
+    if args.auth_command == "register":
+        print("\n=== WTFE API 用户注册 ===")
+        username = input("用户名: ").strip()
+        email = input("邮箱: ").strip()
+        password = getpass("密码: ").strip()
+        confirm_password = getpass("确认密码: ").strip()
+
+        if password != confirm_password:
+            print("错误：密码不匹配")
+            sys.exit(1)
+
+        client.register(username, email, password)
+
+    elif args.auth_command == "login":
+        print("\n=== WTFE API 用户登录 ===")
+        username = input("用户名: ").strip()
+        password = getpass("密码: ").strip()
+
+        result = client.login(username, password)
+
+        # 保存访问令牌到单独的文件
+        if result.get("access_token"):
+            wtfe_root = get_wtfe_root()
+            api_config_path = wtfe_root / 'wtfe_api_config.yaml'
+            try:
+                config_data = {
+                    'wtfe_api_token': result.get("access_token"),
+                    'wtfe_api_username': username,
+                    'wtfe_api_url': 'http://127.0.0.1:9999'
+                }
+                with open(api_config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(config_data, f, allow_unicode=True)
+                print(f"✓ 登录信息已保存到 {api_config_path}")
+                print(f"  此文件独立于主配置文件，不会影响现有配置")
+            except Exception as e:
+                print(f"警告：无法保存登录信息: {e}")
+
+    elif args.auth_command == "resend-verification":
+        print("\n=== 重新发送验证邮件 ===")
+        email = input("邮箱地址: ").strip()
+        client.resend_verification_email(email)
+
+    elif args.auth_command == "api-key":
+        print("\n=== 创建API密钥 ===")
+        name = input("密钥名称 (默认: default): ").strip() or "default"
+
+        # 尝试从API配置文件获取访问令牌
+        access_token = None
+        wtfe_root = get_wtfe_root()
+        api_config_path = wtfe_root / 'wtfe_api_config.yaml'
+        try:
+            with open(api_config_path, 'r', encoding='utf-8') as f:
+                cfg = yaml.safe_load(f) or {}
+                access_token = cfg.get('wtfe_api_token')
+        except:
+            pass
+
+        if access_token:
+            client.access_token = access_token
+            result = client.create_api_key(name)
+
+            # 保存API密钥到配置文件
+            api_key = result.get("api_key")
+            if api_key:
+                try:
+                    with open(api_config_path, 'r', encoding='utf-8') as f:
+                        cfg = yaml.safe_load(f) or {}
+                    cfg['wtfe_api_key'] = api_key
+                    cfg['wtfe_api_key_name'] = name
+                    cfg['wtfe_api_key_created'] = time.strftime("%Y-%m-%d %H:%M:%S")
+                    with open(api_config_path, 'w', encoding='utf-8') as f:
+                        yaml.dump(cfg, f, allow_unicode=True)
+                    print(f"✓ API密钥已保存到 {api_config_path}")
+                except Exception as e:
+                    print(f"警告：无法保存API密钥: {e}")
+        else:
+            print("错误：未找到登录信息，请先登录")
+            print("使用方法：python wtfe.py auth login")
+            sys.exit(1)
+
+    elif args.auth_command == "user-info":
+        # 尝试从API配置文件获取访问令牌
+        access_token = None
+        wtfe_root = get_wtfe_root()
+        api_config_path = wtfe_root / 'wtfe_api_config.yaml'
+        try:
+            with open(api_config_path, 'r', encoding='utf-8') as f:
+                cfg = yaml.safe_load(f) or {}
+                access_token = cfg.get('wtfe_api_token')
+        except:
+            pass
+
+        if access_token:
+            client.access_token = access_token
+            client.get_user_info()
+        else:
+            print("错误：未找到登录信息，请先登录")
+            print("使用方法：python wtfe.py auth login")
+            sys.exit(1)
+
+
 def run_full(path, detail=False, auto_confirm=False):
     Colors.init_windows()
     wtfe_root = get_wtfe_root()
@@ -214,46 +328,122 @@ def run_full(path, detail=False, auto_confirm=False):
     print('=' * 60 + '\n')
 
 def main():
-    if len(sys.argv) < 2:
-        print('Usage: python wtfe.py [--detail] <project_path>')
-        print('       python wtfe.py -m <module> <args>')
-        print('\nOptions:')
-        print('  --detail, -d    Enable detailed analysis (includes entry file contents for AI)')
-        print('\nModules: analyze, readme, file, folder, run, context, intent')
+    parser = argparse.ArgumentParser(description='WTFE - Why The Folder Exists')
+    subparsers = parser.add_subparsers(dest='command', help='可用命令')
+
+    # 分析命令
+    analyze_parser = subparsers.add_parser('analyze', help='分析项目并生成README')
+    analyze_parser.add_argument('path', help='项目路径')
+    analyze_parser.add_argument('--detail', '-d', action='store_true', help='启用详细分析模式')
+    analyze_parser.add_argument('--auto-confirm', '-a', action='store_true', help='自动确认发送分析到AI')
+
+    # 模块命令
+    module_parser = subparsers.add_parser('module', help='运行特定模块')
+    module_parser.add_argument('module_name', help='模块名称: analyze, readme, file, folder, run, context, intent')
+    module_parser.add_argument('args', nargs=argparse.REMAINDER, help='模块参数')
+
+    # 认证命令
+    auth_parser = subparsers.add_parser('auth', help='用户认证和API密钥管理')
+    auth_parser.add_argument('auth_command', choices=['register', 'login', 'resend-verification', 'api-key', 'user-info'],
+                           help='认证命令: register(注册), login(登录), resend-verification(重新发送验证邮件), api-key(创建API密钥), user-info(用户信息)')
+
+    # 在线模式命令
+    online_parser = subparsers.add_parser('online', help='使用在线服务分析项目')
+    online_parser.add_argument('path', help='项目路径')
+    online_parser.add_argument('--detail', '-d', action='store_true', help='启用详细分析模式')
+    online_parser.add_argument('--auto-confirm', '-a', action='store_true', help='自动确认发送分析到AI')
+    online_parser.add_argument('--api-key', help='API密钥（可选，从配置文件读取）')
+
+    # 向后兼容的旧版参数解析
+    if len(sys.argv) == 1:
+        parser.print_help()
         sys.exit(0)
-    
-    detail = False
-    path_arg = None
-    auto_confirm = False
-    
+
+    # 检查是否是旧版参数格式
     if sys.argv[1] in ['-m', '--module']:
+        # 旧版模块命令
         if len(sys.argv) < 3:
             print('Error: Missing module name', file=sys.stderr)
             sys.exit(1)
         run_module(sys.argv[2], sys.argv[3:])
     elif sys.argv[1] in ['-h', '--help']:
+        # 旧版帮助
         print('Usage: python wtfe.py [--detail] [-a|--auto-confirm] <project_path>')
         print('       python wtfe.py -m <module> <args>')
         print('\nOptions:')
         print('  --detail, -d    Enable detailed analysis (includes entry file contents for AI)')
         print('  -a, --auto-confirm   Automatically send analysis payload to AI (no prompt)')
+        print('\n新命令格式:')
+        print('  python wtfe.py analyze <path> [--detail] [--auto-confirm]')
+        print('  python wtfe.py auth <command> (register|login|resend-verification|api-key|user-info)')
+        print('  python wtfe.py online <path> [--detail] [--auto-confirm] [--api-key]')
         sys.exit(0)
+    elif not sys.argv[1].startswith('-') and len(sys.argv) >= 2:
+        # 检查是否是新版命令
+        if sys.argv[1] in ['auth', 'analyze', 'module', 'online']:
+            # 使用新版参数解析
+            args = parser.parse_args()
+
+            if args.command == 'analyze':
+                run_full(args.path, detail=args.detail, auto_confirm=args.auto_confirm)
+            elif args.command == 'module':
+                run_module(args.module_name, args.args)
+            elif args.command == 'auth':
+                handle_auth_command(args)
+            elif args.command == 'online':
+                print("在线模式 - 使用WTFE API在线服务")
+                print("=" * 50)
+                print("使用方法:")
+                print("  1. 注册: python wtfe.py auth register")
+                print("  2. 登录: python wtfe.py auth login")
+                print("  3. 获取API密钥: python wtfe.py auth api-key")
+                print("  4. 使用在线服务: python wtfe_online/wtfe_online.py <命令>")
+                print("\n注意：在线服务是可选的，本地分析功能依然可用")
+                sys.exit(0)
+            else:
+                parser.print_help()
+        else:
+            # 旧版分析命令
+            detail = False
+            path_arg = None
+            auto_confirm = False
+
+            args = sys.argv[1:]
+            for arg in args:
+                if arg in ['--detail', '-d']:
+                    detail = True
+                elif arg in ['-a', '--auto-confirm']:
+                    auto_confirm = True
+                elif not arg.startswith('-'):
+                    path_arg = arg
+
+            if not path_arg:
+                print('Error: Missing project path', file=sys.stderr)
+                sys.exit(1)
+
+            run_full(path_arg, detail=detail, auto_confirm=auto_confirm)
     else:
-        # Parse flags
-        args = sys.argv[1:]
-        for arg in args:
-            if arg in ['--detail', '-d']:
-                detail = True
-            elif arg in ['-a', '--auto-confirm']:
-                auto_confirm = True
-            elif not arg.startswith('-'):
-                path_arg = arg
-        
-        if not path_arg:
-            print('Error: Missing project path', file=sys.stderr)
-            sys.exit(1)
-        
-        run_full(path_arg, detail=detail, auto_confirm=auto_confirm)
+        # 新版参数解析
+        args = parser.parse_args()
+
+        if args.command == 'analyze':
+            run_full(args.path, detail=args.detail, auto_confirm=args.auto_confirm)
+        elif args.command == 'module':
+            run_module(args.module_name, args.args)
+        elif args.command == 'auth':
+            handle_auth_command(args)
+        elif args.command == 'online':
+            print("在线模式 - 使用WTFE API在线服务")
+            print("=" * 50)
+            print("使用方法:")
+            print("  1. 注册: python wtfe.py auth register")
+            print("  2. 登录: python wtfe.py auth login")
+            print("  3. 获取API密钥: python wtfe.py auth api-key")
+            print("  4. 使用在线服务: python wtfe_online/wtfe_online.py <命令>")
+            print("\n注意：在线服务是可选的，本地分析功能依然可用")
+            sys.exit(0)
+        else:
+            parser.print_help()
 
 if __name__ == '__main__':
     main()
