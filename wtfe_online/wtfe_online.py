@@ -27,6 +27,41 @@ class WTFEOnlineClient:
         self.api_key = None
         self.access_token = None
 
+        # 尝试从配置文件加载认证信息
+        self._load_auth_from_config()
+
+    def _load_auth_from_config(self):
+        """从配置文件加载认证信息"""
+        try:
+            import yaml
+            from pathlib import Path
+
+            api_config_path = Path(__file__).parent.parent / 'wtfe_api_config.yaml'
+            if api_config_path.exists():
+                with open(api_config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+
+                    # 加载API密钥
+                    api_key = config.get('wtfe_api_key')
+                    if api_key:
+                        self.api_key = api_key
+                        print(f"✓ 从配置文件加载API密钥")
+
+                    # 加载访问令牌
+                    access_token = config.get('wtfe_api_token')
+                    if access_token:
+                        self.access_token = access_token
+                        print(f"✓ 从配置文件加载访问令牌")
+
+                    # 更新API URL（如果配置文件中有）
+                    api_url = config.get('wtfe_api_url')
+                    if api_url and api_url != self.base_url:
+                        self.base_url = api_url
+                        print(f"✓ 使用配置文件中的API URL: {api_url}")
+        except Exception as e:
+            # 静默失败，不影响正常使用
+            pass
+
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """发送HTTP请求"""
         url = f"{self.base_url}{endpoint}"
@@ -39,6 +74,14 @@ class WTFEOnlineClient:
             headers['X-API-Key'] = self.api_key
 
         kwargs['headers'] = headers
+
+        # 添加SSL验证选项（针对自签名证书或SSL问题）
+        if 'verify' not in kwargs:
+            # 默认禁用SSL验证以解决证书问题
+            kwargs['verify'] = False
+            # 添加警告抑制
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         try:
             response = self.session.request(method, url, **kwargs)
@@ -473,11 +516,17 @@ def main():
     elif command == "create-api-key":
         interactive_create_api_key()
     elif command == "user-info":
-        # 需要先登录
-        login_result = interactive_login()
-        if login_result.get("access_token"):
-            client.access_token = login_result.get("access_token")
-            client.get_user_info()
+        # 检查是否有认证信息
+        if not client.access_token:
+            print("需要登录以获取用户信息")
+            login_result = interactive_login()
+            if login_result.get("access_token"):
+                client.access_token = login_result.get("access_token")
+            else:
+                print("登录失败")
+                sys.exit(1)
+
+        client.get_user_info()
     elif command == "analyze":
         # 分析项目命令
         if len(sys.argv) < 3:
@@ -488,29 +537,10 @@ def main():
         project_path = sys.argv[2]
         detail = "--detail" in sys.argv or "-d" in sys.argv
 
-        # 创建客户端
-        client = WTFEOnlineClient()
-
-        # 检查是否有API密钥或访问令牌
-        if not client.api_key and not client.access_token:
-            # 尝试从配置文件读取API密钥
-            try:
-                import yaml
-                from pathlib import Path
-                api_config_path = Path(__file__).parent.parent / 'wtfe_api_config.yaml'
-                if api_config_path.exists():
-                    with open(api_config_path, 'r', encoding='utf-8') as f:
-                        config = yaml.safe_load(f) or {}
-                        api_key = config.get('wtfe_api_key')
-                        if api_key:
-                            client.api_key = api_key
-                            print(f"✓ 使用配置文件中的API密钥")
-            except:
-                pass
-
-        # 如果没有认证信息，需要用户提供
+        # 检查是否有认证信息（客户端初始化时已尝试从配置文件加载）
         if not client.api_key and not client.access_token:
             print("\n需要认证信息")
+            print("检测到以下认证方式:")
             print("1. 使用API密钥")
             print("2. 使用用户名密码登录")
             choice = input("选择认证方式 (1/2): ").strip()

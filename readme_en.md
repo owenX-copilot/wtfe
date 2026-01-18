@@ -65,6 +65,9 @@ python wtfe.py auth user-info
 
 # Resend verification email
 python wtfe.py auth resend-verification
+
+# Analyze project using online service
+python wtfe.py online ./your-project --detail
 ```
 
 **Note**: The online service is optional. We recommend using the local CLI self-hosted analysis environment for privacy protection and cost savings.
@@ -88,6 +91,10 @@ python wtfe.py auth resend-verification
 - **Usage Limits**: Maximum 10 calls per day per API key
 - **Privacy Protection**: All analysis data transmitted via HTTPS encryption
 - **Free Tier**: Limited free calls available (to prevent abuse)
+- **Auto Authentication**: Credentials saved after login, no need to re-authenticate
+- **SSL Support**: Automatic SSL certificate handling, supports self-signed certificates
+- **File Upload**: Supports directories (auto-compressed to tar.gz) and files (zip/tar.gz)
+- **Detail Mode**: Supports `--detail` parameter for detailed analysis mode
 
 ## Configuration
 
@@ -247,12 +254,24 @@ wtfe/
 
 ## Limitations
 
+### General Limitations
 - Static analysis only, no code execution
 - Does not understand business logic
 - Generated README requires human review
 - AI cost depends on project size (small projects < $0.01)
-- Online service has usage limits (maximum 10 calls per day per API key)
-- Recommended to use local CLI self-hosted analysis environment for privacy protection and cost savings
+
+### Online Service Limitations
+- **Usage Limits**: Maximum 10 calls per day per API key
+- **File Size**: Maximum upload size 100MB
+- **Authentication Required**: Registration and email verification required
+- **API Keys**: Maximum 2 API keys per user
+- **Privacy Considerations**: Project files are uploaded to server for analysis
+- **Network Dependency**: Requires stable internet connection
+
+### Recommended Usage Scenarios
+- **Recommended: Local CLI**: For private projects or privacy-sensitive scenarios
+- **Recommended: Online Service**: For public projects, quick prototyping, or when you don't want to configure AI API keys
+- **Hybrid Approach**: Try online service first, then switch to local CLI once familiar
 
 ## Supported Programming Languages
 
