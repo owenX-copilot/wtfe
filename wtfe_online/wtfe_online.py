@@ -247,6 +247,39 @@ class WTFEOnlineClient:
 
         return result
 
+    def _safe_delete_file(self, file_path: str, max_retries: int = 3) -> None:
+        """安全删除文件，支持重试机制
+
+        Args:
+            file_path: 文件路径
+            max_retries: 最大重试次数
+        """
+        if not file_path or not os.path.exists(file_path):
+            return
+
+        for attempt in range(max_retries):
+            try:
+                # 在Windows上，可能需要先关闭所有句柄
+                if os.name == 'nt':  # Windows系统
+                    import time
+                    # 等待一小段时间让系统释放文件句柄
+                    time.sleep(0.1 * (attempt + 1))
+
+                os.unlink(file_path)
+                return  # 删除成功
+            except PermissionError as e:
+                if attempt < max_retries - 1:
+                    # 等待后重试
+                    import time
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                else:
+                    print(f"警告：无法删除临时文件 {file_path} (权限错误): {e}")
+                    return
+            except Exception as e:
+                print(f"警告：无法删除临时文件 {file_path}: {e}")
+                return
+
     def set_api_key(self, api_key: str) -> None:
         """设置API密钥（用于在线模式）"""
         self.api_key = api_key
@@ -287,42 +320,44 @@ class WTFEOnlineClient:
 
             print("检测到目录，正在压缩...")
 
-            # 创建临时tar.gz文件
-            with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp_file:
-                tar_path = tmp_file.name
+            # 使用更安全的方式创建临时文件，放在专门的wtfe子目录中
+            temp_dir = tempfile.gettempdir()
+            wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
 
-                # 创建tar.gz
+            # 确保wtfe子目录存在
+            os.makedirs(wtfe_temp_dir, exist_ok=True)
+
+            temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
+            tar_path = os.path.join(wtfe_temp_dir, temp_filename)
+
+            try:
+                # 创建tar.gz文件
                 with tarfile.open(tar_path, 'w:gz') as tar:
                     tar.add(project_path, arcname=os.path.basename(project_path))
 
                 print(f"已创建压缩文件: {tar_path}")
 
-                try:
-                    # 上传文件 - 确保文件在请求完成后关闭
-                    result = None
-                    with open(tar_path, 'rb') as f:
-                        files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                # 上传文件 - 使用with语句确保文件句柄正确关闭
+                result = None
+                with open(tar_path, 'rb') as f:
+                    files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
 
-                        # 构建请求参数
-                        params = {}
-                        if detail:
-                            params['detail'] = 'true'
+                    # 构建请求参数
+                    params = {}
+                    if detail:
+                        params['detail'] = 'true'
 
-                        result = self._make_request(
-                            "POST",
-                            f"{API_V1_PREFIX}/analyze-and-generate",
-                            files=files,
-                            params=params
-                        )
+                    result = self._make_request(
+                        "POST",
+                        f"{API_V1_PREFIX}/analyze-and-generate",
+                        files=files,
+                        params=params
+                    )
 
-                    return result
-                finally:
-                    # 清理临时文件 - 确保文件已关闭
-                    try:
-                        if os.path.exists(tar_path):
-                            os.unlink(tar_path)
-                    except Exception as e:
-                        print(f"警告：无法删除临时文件 {tar_path}: {e}")
+                return result
+            finally:
+                # 清理临时文件 - 使用重试机制确保文件删除
+                self._safe_delete_file(tar_path)
         else:
             # 如果是文件，直接上传
             print(f"上传文件: {project_path}")
