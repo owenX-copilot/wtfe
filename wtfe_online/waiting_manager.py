@@ -297,10 +297,16 @@ def waiting_context(title: str = "Processing", message: str = None,
     """
     manager = WaitingManager(title, category)
     manager.start(message)
+    
+    # Start cycling random messages for better visual feedback
+    if ALIVE_PROGRESS_AVAILABLE:
+        manager.cycle_random_messages(interval=1.5)
 
     try:
         yield manager
     finally:
+        if ALIVE_PROGRESS_AVAILABLE:
+            manager.stop_cycling()
         manager.stop()
 
 
