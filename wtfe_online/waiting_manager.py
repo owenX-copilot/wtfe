@@ -3,23 +3,16 @@
 Waiting Manager Module
 
 Provides elegant waiting effects for operations with uncertain duration.
-Uses alive-progress library to implement typing-style waiting indicators.
+Uses simple spinner with single-line text updates.
 """
 
 import sys
 import time
 import random
+import threading
 from typing import Optional, List, Callable, Any
 from contextlib import contextmanager
 from enum import Enum
-
-try:
-    from alive_progress import alive_bar
-    ALIVE_PROGRESS_AVAILABLE = True
-except ImportError:
-    ALIVE_PROGRESS_AVAILABLE = False
-    print("Warning: alive-progress library not installed, using simple waiting indicators")
-    print("Please run: pip install alive-progress")
 
 
 class EngineeringTermCategory(Enum):
@@ -34,7 +27,7 @@ class EngineeringTermCategory(Enum):
 
 
 class WaitingManager:
-    """Waiting Manager Class"""
+    """Waiting Manager Class with simple spinner"""
 
     # Engineering terms database - like Claude Code's vibe
     ENGINEERING_TERMS = {
@@ -111,6 +104,9 @@ class WaitingManager:
         "readme", "config", "settings", "environment", "context"
     ]
 
+    # Spinner frames
+    SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+
     def __init__(self, title: str = "Processing", category: EngineeringTermCategory = None):
         """
         Initialize waiting manager
@@ -121,8 +117,12 @@ class WaitingManager:
         """
         self.title = title
         self.category = category or EngineeringTermCategory.GENERAL
-        self._bar = None
-        self._current_terms = []
+        self._running = False
+        self._spinner_thread = None
+        self._current_message = ""
+        self._spinner_index = 0
+        self._stop_event = threading.Event()
+        self._lock = threading.Lock()
 
     def _get_random_term(self) -> str:
         """Get a random engineering term"""
@@ -153,14 +153,16 @@ class WaitingManager:
 
         return random.choice(formats)
 
-    def _get_spinner_style(self) -> str:
-        """Get spinner style"""
-        # Classic spinner has typing effect
-        return "classic"
-
-    def _get_bar_style(self) -> str:
-        """Get progress bar style"""
-        return "smooth"
+    def _spinner_loop(self):
+        """Spinner animation loop"""
+        while not self._stop_event.is_set():
+            with self._lock:
+                spinner_char = self.SPINNER_FRAMES[self._spinner_index % len(self.SPINNER_FRAMES)]
+                display_text = f"{spinner_char} {self.title}: {self._current_message}"
+                sys.stdout.write('\r' + display_text + ' ' * 10)  # Clear extra characters
+                sys.stdout.flush()
+                self._spinner_index += 1
+            time.sleep(0.1)
 
     def start(self, message: str = None, total: Optional[int] = None):
         """
@@ -168,42 +170,15 @@ class WaitingManager:
 
         Args:
             message: Initial message
-            total: Total steps (if known)
+            total: Total steps (if known) - ignored for simple spinner
         """
-        if not ALIVE_PROGRESS_AVAILABLE:
-            print(f"{self.title}... {message or ''}")
-            return
-
-        try:
-            display_message = message or self._generate_engineering_message()
-
-            if total:
-                # If total steps known, show progress bar
-                self._bar = alive_bar(
-                    total=total,
-                    title=self.title,
-                    bar=self._get_bar_style(),
-                    spinner=self._get_spinner_style(),
-                    manual=True
-                )
-                self._bar.__enter__()
-                self._bar.text(display_message)
-            else:
-                # Uncertain duration, show spinner only
-                self._bar = alive_bar(
-                    title=self.title,
-                    spinner=self._get_spinner_style(),
-                    manual=True,
-                    monitor=False,
-                    stats=False,
-                    enrich_print=False
-                )
-                self._bar.__enter__()
-                self._bar.text(display_message)
-        except Exception as e:
-            # Fallback to simple mode if alive-progress fails
-            print(f"{self.title}... {message or ''}")
-            self._bar = None
+        self._running = True
+        self._stop_event.clear()
+        self._current_message = message or self._generate_engineering_message()
+        
+        # Start spinner thread
+        self._spinner_thread = threading.Thread(target=self._spinner_loop, daemon=True)
+        self._spinner_thread.start()
 
     def update(self, message: str = None, progress: Optional[float] = None):
         """
@@ -211,20 +186,16 @@ class WaitingManager:
 
         Args:
             message: New message
-            progress: Progress (between 0.0 and 1.0)
+            progress: Progress (between 0.0 and 1.0) - ignored
         """
-        if not ALIVE_PROGRESS_AVAILABLE or not self._bar:
-            if message:
-                print(f"  {message}")
+        if not self._running:
             return
-
-        try:
-            display_message = message or self._generate_engineering_message()
-            self._bar.text(display_message)
-            if progress is not None:
-                self._bar(progress)
-        except:
-            pass
+        
+        with self._lock:
+            if message:
+                self._current_message = message
+            else:
+                self._current_message = self._generate_engineering_message()
 
     def stop(self, message: str = "Done!"):
         """
@@ -233,18 +204,15 @@ class WaitingManager:
         Args:
             message: Completion message
         """
-        if not ALIVE_PROGRESS_AVAILABLE or not self._bar:
-            print(f"✓ {message}")
-            return
-
-        try:
-            self._bar.text(message)
-            time.sleep(0.3)  # Briefly show completion message
-            self._bar.__exit__(None, None, None)
-            self._bar = None
-        except:
-            print(f"✓ {message}")
-            self._bar = None
+        self._running = False
+        self._stop_event.set()
+        if self._spinner_thread:
+            self._spinner_thread.join(timeout=0.5)
+        
+        # Clear the line and show completion message
+        sys.stdout.write('\r' + ' ' * 80 + '\r')  # Clear line
+        sys.stdout.write(f"✓ {message}\n")
+        sys.stdout.flush()
 
     def cycle_random_messages(self, interval: float = 1.5, count: Optional[int] = None):
         """
@@ -254,9 +222,6 @@ class WaitingManager:
             interval: Message switch interval (seconds)
             count: Number of messages to cycle (None for infinite)
         """
-        import threading
-        import itertools
-
         self._stop_cycling_event = threading.Event()
         self._cycling_thread = None
 
@@ -302,14 +267,12 @@ def waiting_context(title: str = "Processing", message: str = None,
     manager.start(message)
     
     # Start cycling random messages for better visual feedback
-    if ALIVE_PROGRESS_AVAILABLE:
-        manager.cycle_random_messages(interval=1.5)
+    manager.cycle_random_messages(interval=1.5)
 
     try:
         yield manager
     finally:
-        if ALIVE_PROGRESS_AVAILABLE:
-            manager.stop_cycling()
+        manager.stop_cycling()
         manager.stop()
 
 
@@ -321,11 +284,6 @@ def simulate_typing_effect(text: str, delay: float = 0.03):
         text: Text to display
         delay: Delay per character (seconds)
     """
-    if not ALIVE_PROGRESS_AVAILABLE:
-        print(text)
-        return
-
-    import sys
     for i, char in enumerate(text):
         sys.stdout.write(char)
         sys.stdout.flush()
