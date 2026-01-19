@@ -50,6 +50,67 @@ API_BASE_URL = "https://wtfe.aozai.top"
 API_V1_PREFIX = "/api/v1"
 
 
+def _save_readme_smartly(project_path: str, content: str) -> str:
+    """
+    智能保存README，模仿cli版的逻辑
+
+    Args:
+        project_path: 项目路径（文件或目录）
+        content: README内容
+
+    Returns:
+        保存的文件路径，如果保存失败则返回空字符串
+    """
+    try:
+        from pathlib import Path
+        import yaml
+
+        # 确定项目目录
+        project_dir = Path(project_path)
+        if project_dir.is_file():
+            project_dir = project_dir.parent
+
+        # 尝试读取wtfe_readme配置
+        config_path = Path(__file__).parent.parent / "wtfe_readme" / "config.yaml"
+        config = {}
+        if config_path.exists():
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+            except Exception:
+                pass  # 如果读取配置失败，使用默认值
+
+        # 获取配置值
+        output_file = config.get('output_file', 'README.md')
+        overwrite = config.get('overwrite', False)
+        backup_existing = config.get('backup_existing', True)
+
+        # 确定输出路径
+        output_path = project_dir / output_file
+
+        # 检查是否覆盖
+        if output_path.exists():
+            if not overwrite:
+                # 不覆盖，生成新文件名
+                output_path = output_path.parent / 'README_generated.md'
+                print(f"文件已存在，保存为: {output_path}")
+            elif backup_existing:
+                # 覆盖前备份
+                backup_path = Path(str(output_path) + '.bak')
+                output_path.rename(backup_path)
+                print(f"已备份原文件到: {backup_path}")
+
+        # 保存文件
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        return str(output_path)
+
+    except Exception as e:
+        print(f"保存README失败: {e}")
+        return ""
+
+
 class WTFEOnlineClient:
     """WTFE 在线服务客户端"""
 
@@ -426,11 +487,6 @@ class WTFEOnlineClient:
             import tempfile
             import tarfile
             import os
-
-            # 统一提前定义 tar_path
-            import tempfile
-            import tarfile
-            import os
             temp_dir = tempfile.gettempdir()
             wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
             os.makedirs(wtfe_temp_dir, exist_ok=True)
@@ -718,13 +774,12 @@ def interactive_analyze_project():
                 # 询问是否保存到文件
                 save_input = input("\n保存README到文件？(y/N): ").strip().lower()
                 if save_input == 'y':
-                    save_path = input("保存路径 (默认: README.md): ").strip() or "README.md"
-                    try:
-                        with open(save_path, 'w', encoding='utf-8') as f:
-                            f.write(content)
-                        print(f"✓ README已保存到: {save_path}")
-                    except Exception as e:
-                        print(f"保存失败: {e}")
+                    # 使用智能保存逻辑
+                    saved_path = _save_readme_smartly(project_path, content)
+                    if saved_path:
+                        print(f"✓ README已保存到: {saved_path}")
+                    else:
+                        print("保存失败")
             else:
                 print("警告：未生成README内容")
 
@@ -835,19 +890,10 @@ def main():
 
                 # 显示README内容
                 if content:
-                    # 自动保存到项目目录下的README.md
-                    from pathlib import Path
-                    project_dir = Path(project_path)
-                    if project_dir.is_file():
-                        project_dir = project_dir.parent
-
-                    readme_path = project_dir / "README.md"
-                    try:
-                        with open(readme_path, 'w', encoding='utf-8') as f:
-                            f.write(content)
-                        print(f"✓ README已保存到: {readme_path}")
-                    except Exception as e:
-                        print(f"保存失败: {e}")
+                    # 智能保存README，模仿cli版的逻辑
+                    saved_path = _save_readme_smartly(project_path, content)
+                    if saved_path:
+                        print(f"✓ README已保存到: {saved_path}")
 
                     # 显示部分内容
                     print(f"\n生成的README内容 (前500字符):")
