@@ -162,7 +162,7 @@ class WaitingManager:
                 sys.stdout.write('\r' + display_text + ' ' * 10)  # Clear extra characters
                 sys.stdout.flush()
                 self._spinner_index += 1
-            time.sleep(0.1)
+            time.sleep(0.2)  # Slower spinner update
 
     def start(self, message: str = None, total: Optional[int] = None):
         """
@@ -241,6 +241,56 @@ class WaitingManager:
         self._cycling_thread = threading.Thread(target=cycle, daemon=True)
         self._cycling_thread.start()
 
+    def cycle_typing_messages(self, messages: List[str], interval: float = 3.0):
+        """
+        Cycle through messages with typing effect
+
+        Args:
+            messages: List of messages to display
+            interval: Time between message cycles (seconds)
+        """
+        self._stop_typing_event = threading.Event()
+        self._typing_thread = None
+
+        def typing_cycle():
+            while not self._stop_typing_event.is_set():
+                for msg in messages:
+                    if self._stop_typing_event.is_set():
+                        break
+                    # Clear current line and show typing effect
+                    with self._lock:
+                        sys.stdout.write('\r' + ' ' * 80 + '\r')
+                        sys.stdout.flush()
+                        for i, char in enumerate(msg):
+                            if self._stop_typing_event.is_set():
+                                break
+                            sys.stdout.write(char)
+                            sys.stdout.flush()
+                            time.sleep(0.05)
+                        # Hold message for a moment
+                        if self._stop_typing_event.wait(timeout=1.0):
+                            break
+                        # Backspace effect (optional)
+                        for i in range(len(msg)):
+                            if self._stop_typing_event.is_set():
+                                break
+                            sys.stdout.write('\b \b')
+                            sys.stdout.flush()
+                            time.sleep(0.03)
+                    # Wait before next message
+                    if self._stop_typing_event.wait(timeout=interval):
+                        break
+
+        self._typing_thread = threading.Thread(target=typing_cycle, daemon=True)
+        self._typing_thread.start()
+
+    def stop_typing(self):
+        """Stop typing effect"""
+        if hasattr(self, '_stop_typing_event'):
+            self._stop_typing_event.set()
+        if hasattr(self, '_typing_thread') and self._typing_thread:
+            self._typing_thread.join(timeout=0.5)
+
     def stop_cycling(self):
         """Stop message cycling"""
         if hasattr(self, '_stop_cycling_event'):
@@ -266,13 +316,27 @@ def waiting_context(title: str = "Processing", message: str = None,
     manager = WaitingManager(title, category)
     manager.start(message)
     
-    # Start cycling random messages for better visual feedback
-    manager.cycle_random_messages(interval=1.5)
+    # Choose animation based on category
+    if category == EngineeringTermCategory.PROCESSING:
+        # For API processing, use typing effect with comforting messages
+        comforting_messages = [
+            "等待API回复中...",
+            "正在处理您的请求...",
+            "即将完成...",
+            "请稍候..."
+        ]
+        manager.cycle_typing_messages(comforting_messages, interval=3.0)
+    else:
+        # For other stages, use random engineering terms
+        manager.cycle_random_messages(interval=2.5)
 
     try:
         yield manager
     finally:
-        manager.stop_cycling()
+        if category == EngineeringTermCategory.PROCESSING:
+            manager.stop_typing()
+        else:
+            manager.stop_cycling()
         manager.stop()
 
 

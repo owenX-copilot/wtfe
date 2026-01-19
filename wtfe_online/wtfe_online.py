@@ -20,8 +20,15 @@ EngineeringTermCategory = None
 simulate_typing_effect = None
 
 try:
-    # First try relative import (works when module is part of package)
-    from .waiting_manager import (
+    # Try to import waiting_manager module
+    import sys
+    import os
+    # Add current directory to path for absolute import
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, current_dir)
+    # Debug: print path
+    # print(f"DEBUG: Importing from {current_dir}")
+    from waiting_manager import (
         waiting_context as wc,
         EngineeringTermCategory as etc,
         simulate_typing_effect as ste
@@ -30,21 +37,13 @@ try:
     EngineeringTermCategory = etc
     simulate_typing_effect = ste
     WAITING_MANAGER_AVAILABLE = True
-except ImportError:
-    try:
-        # Fallback to absolute import (works when running as script)
-        from waiting_manager import (
-            waiting_context as wc,
-            EngineeringTermCategory as etc,
-            simulate_typing_effect as ste
-        )
-        waiting_context = wc
-        EngineeringTermCategory = etc
-        simulate_typing_effect = ste
-        WAITING_MANAGER_AVAILABLE = True
-    except ImportError:
-        WAITING_MANAGER_AVAILABLE = False
-        print("Note: Waiting manager not available, using simple progress indicators")
+    # print(f"DEBUG: Waiting manager imported successfully")
+except ImportError as e:
+    WAITING_MANAGER_AVAILABLE = False
+    import traceback
+    print(f"Note: Waiting manager not available, using simple progress indicators")
+    # print(f"DEBUG: Import error: {e}")
+    # traceback.print_exc()
 
 # API地址 - 连接到线上服务
 API_BASE_URL = "https://wtfe.aozai.top"
@@ -118,17 +117,23 @@ class WTFEOnlineClient:
 
         try:
             # Show waiting indicator for API requests
-            if WAITING_MANAGER_AVAILABLE and method in ['POST', 'PUT', 'PATCH']:
-                with waiting_context("API Processing", category=EngineeringTermCategory.PROCESSING) as manager:
-                    response = self.session.request(method, url, **kwargs)
-                    response.raise_for_status()
-                    return response.json()
+            if WAITING_MANAGER_AVAILABLE and method in ['POST', 'PUT', 'PATCH'] and waiting_context and EngineeringTermCategory:
+                if hasattr(EngineeringTermCategory, "PROCESSING"):
+                    with waiting_context("API Processing", category=getattr(EngineeringTermCategory, "PROCESSING")) as manager:
+                        response = self.session.request(method, url, **kwargs)
+                        response.raise_for_status()
+                        return response.json()
+                else:
+                    with waiting_context("API Processing") as manager:
+                        response = self.session.request(method, url, **kwargs)
+                        response.raise_for_status()
+                        return response.json()
             else:
                 response = self.session.request(method, url, **kwargs)
                 response.raise_for_status()
                 return response.json()
         except requests.exceptions.RequestException as e:
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect(f"Request failed: {e}")
             else:
                 print(f"Request failed: {e}")
@@ -136,12 +141,12 @@ class WTFEOnlineClient:
             if hasattr(e, 'response') and e.response is not None:
                 try:
                     error_data = e.response.json()
-                    if WAITING_MANAGER_AVAILABLE:
+                    if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                         simulate_typing_effect(f"Error details: {error_data}")
                     else:
                         print(f"Error details: {error_data}")
                 except:
-                    if WAITING_MANAGER_AVAILABLE:
+                    if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                         simulate_typing_effect(f"Response content: {e.response.text}")
                     else:
                         print(f"Response content: {e.response.text}")
@@ -149,7 +154,7 @@ class WTFEOnlineClient:
 
     def register(self, username: str, email: str, password: str) -> Dict[str, Any]:
         """Register new user"""
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"Registering user: {username} ({email})")
         else:
             print(f"Registering user: {username} ({email})")
@@ -162,7 +167,7 @@ class WTFEOnlineClient:
 
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/register", json=data)
 
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"✓ Registration successful! User ID: {result.get('id')}")
             simulate_typing_effect(f"  Please check your email {email} for verification link")
         else:
@@ -172,7 +177,7 @@ class WTFEOnlineClient:
 
     def login(self, username: str, password: str) -> Dict[str, Any]:
         """User login"""
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"Logging in: {username}")
         else:
             print(f"Logging in: {username}")
@@ -187,7 +192,7 @@ class WTFEOnlineClient:
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/login", data=data)
 
         self.access_token = result.get("access_token")
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"✓ Login successful!")
         else:
             print(f"✓ Login successful!")
@@ -215,12 +220,12 @@ class WTFEOnlineClient:
 
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
-                if WAITING_MANAGER_AVAILABLE:
+                if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                     simulate_typing_effect(f"✓ Login information saved to {api_config_path}")
                 else:
                     print(f"✓ Login information saved to {api_config_path}")
             except Exception as e:
-                if WAITING_MANAGER_AVAILABLE:
+                if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                     simulate_typing_effect(f"Warning: Unable to save login information: {e}")
                 else:
                     print(f"Warning: Unable to save login information: {e}")
@@ -229,7 +234,7 @@ class WTFEOnlineClient:
 
     def resend_verification_email(self, email: str) -> Dict[str, Any]:
         """Resend verification email"""
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"Resending verification email to: {email}")
         else:
             print(f"Resending verification email to: {email}")
@@ -241,12 +246,12 @@ class WTFEOnlineClient:
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/resend-verification", json=data)
 
         if result.get("success"):
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect(f"✓ Verification email resent to: {email}")
             else:
                 print(f"✓ Verification email resent to: {email}")
         else:
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect(f"✗ Failed to send verification email: {result.get('message', 'Unknown error')}")
             else:
                 print(f"✗ Failed to send verification email: {result.get('message', 'Unknown error')}")
@@ -256,13 +261,13 @@ class WTFEOnlineClient:
     def create_api_key(self, name: str = "default") -> Dict[str, Any]:
         """Create API key"""
         if not self.access_token:
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect("Error: Please login first")
             else:
                 print("Error: Please login first")
             sys.exit(1)
 
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"Creating API key: {name}")
         else:
             print(f"Creating API key: {name}")
@@ -275,7 +280,7 @@ class WTFEOnlineClient:
 
         api_key = result.get("api_key")
         if api_key:
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect(f"✓ API key created successfully!")
                 simulate_typing_effect(f"  API key: {api_key}")
                 simulate_typing_effect(f"  Warning: This key will only be shown once, please save it securely")
@@ -309,17 +314,17 @@ class WTFEOnlineClient:
 
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
-                if WAITING_MANAGER_AVAILABLE:
+                if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                     simulate_typing_effect(f"✓ API key saved to {api_config_path}")
                 else:
                     print(f"✓ API key saved to {api_config_path}")
             except Exception as e:
-                if WAITING_MANAGER_AVAILABLE:
+                if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                     simulate_typing_effect(f"Warning: Unable to save API key: {e}")
                 else:
                     print(f"Warning: Unable to save API key: {e}")
         else:
-            if WAITING_MANAGER_AVAILABLE:
+            if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect("✗ Failed to get API key")
             else:
                 print("✗ Failed to get API key")
@@ -401,7 +406,7 @@ class WTFEOnlineClient:
         Returns:
             Analysis result
         """
-        if WAITING_MANAGER_AVAILABLE:
+        if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
             simulate_typing_effect(f"Analyzing project: {project_path}")
             if detail:
                 simulate_typing_effect("Detailed analysis mode enabled")
@@ -422,9 +427,93 @@ class WTFEOnlineClient:
             import tarfile
             import os
 
-            if WAITING_MANAGER_AVAILABLE:
+            # 统一提前定义 tar_path
+            import tempfile
+            import tarfile
+            import os
+            temp_dir = tempfile.gettempdir()
+            wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
+            os.makedirs(wtfe_temp_dir, exist_ok=True)
+            temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
+            tar_path = os.path.join(wtfe_temp_dir, temp_filename)
+
+            if WAITING_MANAGER_AVAILABLE and waiting_context and EngineeringTermCategory:
                 # Use waiting context for compression
-                with waiting_context("Compressing", category=EngineeringTermCategory.COMPRESSING) as manager:
+                if hasattr(EngineeringTermCategory, "COMPRESSING"):
+                    with waiting_context("Compressing", category=getattr(EngineeringTermCategory, "COMPRESSING")) as manager:
+                        manager.update("Creating archive...")
+                        with tarfile.open(tar_path, 'w:gz') as tar:
+                            tar.add(project_path, arcname=os.path.basename(project_path))
+
+                        manager.update("Archive created")
+
+                        # Upload file - use with statement to ensure file handle is properly closed
+                        result = None
+                        with open(tar_path, 'rb') as f:
+                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+
+                            # Build request parameters
+                            params = {}
+                            if detail:
+                                params['detail'] = 'true'
+
+                            # Switch to uploading context
+                            manager.update("Preparing upload...")
+
+                    # Upload with separate waiting context
+                    if hasattr(EngineeringTermCategory, "UPLOADING"):
+                        with waiting_context("Uploading", category=getattr(EngineeringTermCategory, "UPLOADING")) as upload_manager:
+                            with open(tar_path, 'rb') as f:
+                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                                result = self._make_request(
+                                    "POST",
+                                    f"{API_V1_PREFIX}/analyze-and-generate",
+                                    files=files,
+                                    params=params
+                                )
+                    else:
+                        with waiting_context("Uploading") as upload_manager:
+                            with open(tar_path, 'rb') as f:
+                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                                result = self._make_request(
+                                    "POST",
+                                    f"{API_V1_PREFIX}/analyze-and-generate",
+                                    files=files,
+                                    params=params
+                                )
+                    return result
+                else:
+                    with waiting_context("Compressing") as manager:
+                        manager.update("Creating archive...")
+                        with tarfile.open(tar_path, 'w:gz') as tar:
+                            tar.add(project_path, arcname=os.path.basename(project_path))
+
+                        manager.update("Archive created")
+
+                        # Upload file - use with statement to ensure file handle is properly closed
+                        result = None
+                        with open(tar_path, 'rb') as f:
+                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+
+                            # Build request parameters
+                            params = {}
+                            if detail:
+                                params['detail'] = 'true'
+
+                            # Switch to uploading context
+                            manager.update("Preparing upload...")
+
+                    # Upload with separate waiting context
+                    with waiting_context("Uploading") as upload_manager:
+                        with open(tar_path, 'rb') as f:
+                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                            result = self._make_request(
+                                "POST",
+                                f"{API_V1_PREFIX}/analyze-and-generate",
+                                files=files,
+                                params=params
+                            )
+                    return result
                     # Create temporary file in dedicated wtfe subdirectory
                     temp_dir = tempfile.gettempdir()
                     wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
@@ -457,7 +546,25 @@ class WTFEOnlineClient:
                             manager.update("Preparing upload...")
 
                         # Upload with separate waiting context
-                        with waiting_context("Uploading", category=EngineeringTermCategory.UPLOADING) as upload_manager:
+                        if WAITING_MANAGER_AVAILABLE and waiting_context and EngineeringTermCategory:
+                            with waiting_context("Uploading", category=getattr(EngineeringTermCategory, "UPLOADING", None)) as upload_manager:
+                                with open(tar_path, 'rb') as f:
+                                    files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                                    result = self._make_request(
+                                        "POST",
+                                        f"{API_V1_PREFIX}/analyze-and-generate",
+                                        files=files,
+                                        params=params
+                                    )
+                        else:
+                            with open(tar_path, 'rb') as f:
+                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                                result = self._make_request(
+                                    "POST",
+                                    f"{API_V1_PREFIX}/analyze-and-generate",
+                                    files=files,
+                                    params=params
+                                )
                             with open(tar_path, 'rb') as f:
                                 files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
                                 result = self._make_request(
@@ -515,33 +622,62 @@ class WTFEOnlineClient:
                     self._safe_delete_file(tar_path)
         else:
             # If it's a file, upload directly
-            if WAITING_MANAGER_AVAILABLE:
-                with waiting_context("Uploading", category=EngineeringTermCategory.UPLOADING) as manager:
-                    with open(project_path, 'rb') as f:
-                        # Determine MIME type based on file extension
-                        if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
-                            mime_type = 'application/gzip'
-                        elif project_path.endswith('.zip'):
-                            mime_type = 'application/zip'
-                        else:
-                            mime_type = 'application/octet-stream'
+            import os
+            if WAITING_MANAGER_AVAILABLE and waiting_context and EngineeringTermCategory:
+                if hasattr(EngineeringTermCategory, "UPLOADING"):
+                    with waiting_context("Uploading", category=getattr(EngineeringTermCategory, "UPLOADING")) as manager:
+                        with open(project_path, 'rb') as f:
+                            # Determine MIME type based on file extension
+                            if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
+                                mime_type = 'application/gzip'
+                            elif project_path.endswith('.zip'):
+                                mime_type = 'application/zip'
+                            else:
+                                mime_type = 'application/octet-stream'
 
-                        files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
+                            files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
 
-                        # Build request parameters
-                        params = {}
-                        if detail:
-                            params['detail'] = 'true'
+                            # Build request parameters
+                            params = {}
+                            if detail:
+                                params['detail'] = 'true'
 
-                        result = self._make_request(
-                            "POST",
-                            f"{API_V1_PREFIX}/analyze-and-generate",
-                            files=files,
-                            params=params
-                        )
+                            result = self._make_request(
+                                "POST",
+                                f"{API_V1_PREFIX}/analyze-and-generate",
+                                files=files,
+                                params=params
+                            )
 
-                    return result
+                        return result
+                else:
+                    with waiting_context("Uploading") as manager:
+                        with open(project_path, 'rb') as f:
+                            # Determine MIME type based on file extension
+                            if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
+                                mime_type = 'application/gzip'
+                            elif project_path.endswith('.zip'):
+                                mime_type = 'application/zip'
+                            else:
+                                mime_type = 'application/octet-stream'
+
+                            files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
+
+                            # Build request parameters
+                            params = {}
+                            if detail:
+                                params['detail'] = 'true'
+
+                            result = self._make_request(
+                                "POST",
+                                f"{API_V1_PREFIX}/analyze-and-generate",
+                                files=files,
+                                params=params
+                            )
+
+                        return result
             else:
+                import os
                 print(f"Uploading file: {project_path}")
                 with open(project_path, 'rb') as f:
                     # Determine MIME type based on file extension
