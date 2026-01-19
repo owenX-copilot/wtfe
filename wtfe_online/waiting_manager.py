@@ -123,6 +123,7 @@ class WaitingManager:
         self._spinner_index = 0
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
+        self._typing_active = False
 
     def _get_random_term(self) -> str:
         """Get a random engineering term"""
@@ -157,11 +158,17 @@ class WaitingManager:
         """Spinner animation loop"""
         while not self._stop_event.is_set():
             with self._lock:
-                spinner_char = self.SPINNER_FRAMES[self._spinner_index % len(self.SPINNER_FRAMES)]
-                display_text = f"{spinner_char} {self.title}: {self._current_message}"
-                sys.stdout.write('\r' + display_text + ' ' * 10)  # Clear extra characters
-                sys.stdout.flush()
-                self._spinner_index += 1
+                if self._typing_active:
+                    # When typing effect is active, don't show spinner
+                    # Just clear any leftover text
+                    sys.stdout.write('\r' + ' ' * 80 + '\r')
+                    sys.stdout.flush()
+                else:
+                    spinner_char = self.SPINNER_FRAMES[self._spinner_index % len(self.SPINNER_FRAMES)]
+                    display_text = f"{spinner_char} {self.title}: {self._current_message}"
+                    sys.stdout.write('\r' + display_text + ' ' * 10)  # Clear extra characters
+                    sys.stdout.flush()
+                    self._spinner_index += 1
             time.sleep(0.2)  # Slower spinner update
 
     def start(self, message: str = None, total: Optional[int] = None):
@@ -251,6 +258,7 @@ class WaitingManager:
         """
         self._stop_typing_event = threading.Event()
         self._typing_thread = None
+        self._typing_active = True
 
         def typing_cycle():
             while not self._stop_typing_event.is_set():
@@ -280,6 +288,8 @@ class WaitingManager:
                     # Wait before next message
                     if self._stop_typing_event.wait(timeout=interval):
                         break
+            # Mark typing as inactive when loop ends
+            self._typing_active = False
 
         self._typing_thread = threading.Thread(target=typing_cycle, daemon=True)
         self._typing_thread.start()
@@ -290,6 +300,7 @@ class WaitingManager:
             self._stop_typing_event.set()
         if hasattr(self, '_typing_thread') and self._typing_thread:
             self._typing_thread.join(timeout=0.5)
+        self._typing_active = False
 
     def stop_cycling(self):
         """Stop message cycling"""
@@ -316,27 +327,61 @@ def waiting_context(title: str = "Processing", message: str = None,
     manager = WaitingManager(title, category)
     manager.start(message)
     
-    # Choose animation based on category
-    if category == EngineeringTermCategory.PROCESSING:
-        # For API processing, use typing effect with comforting messages
-        comforting_messages = [
+    # Define comforting messages for each category
+    comforting_messages = {
+        EngineeringTermCategory.PROCESSING: [
             "等待API回复中...",
             "正在处理您的请求...",
             "即将完成...",
             "请稍候..."
+        ],
+        EngineeringTermCategory.COMPRESSING: [
+            "正在压缩项目文件...",
+            "打包中...",
+            "即将完成压缩...",
+            "请稍候..."
+        ],
+        EngineeringTermCategory.UPLOADING: [
+            "正在上传文件...",
+            "传输中...",
+            "即将完成上传...",
+            "请稍候..."
+        ],
+        EngineeringTermCategory.ANALYZING: [
+            "正在分析项目...",
+            "解析中...",
+            "即将完成分析...",
+            "请稍候..."
+        ],
+        EngineeringTermCategory.GENERATING: [
+            "正在生成README...",
+            "撰写中...",
+            "即将完成生成...",
+            "请稍候..."
+        ],
+        EngineeringTermCategory.CODING: [
+            "正在处理代码...",
+            "编码中...",
+            "即将完成...",
+            "请稍候..."
+        ],
+        EngineeringTermCategory.GENERAL: [
+            "处理中...",
+            "请稍候...",
+            "即将完成...",
+            "等待中..."
         ]
-        manager.cycle_typing_messages(comforting_messages, interval=3.0)
-    else:
-        # For other stages, use random engineering terms
-        manager.cycle_random_messages(interval=2.5)
+    }
+    
+    # Use typing effect for all categories
+    category = category or EngineeringTermCategory.GENERAL
+    messages = comforting_messages.get(category, comforting_messages[EngineeringTermCategory.GENERAL])
+    manager.cycle_typing_messages(messages, interval=3.0)
 
     try:
         yield manager
     finally:
-        if category == EngineeringTermCategory.PROCESSING:
-            manager.stop_typing()
-        else:
-            manager.stop_cycling()
+        manager.stop_typing()
         manager.stop()
 
 
