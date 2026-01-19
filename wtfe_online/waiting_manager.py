@@ -3,20 +3,19 @@
 Waiting Manager Module
 
 Provides elegant waiting effects for operations with uncertain duration.
-Uses simple spinner with single-line text updates.
+Uses typing effect with backspace animation.
 """
 
 import sys
 import time
-import random
 import threading
-from typing import Optional, List, Callable, Any
+from typing import Optional, List
 from contextlib import contextmanager
 from enum import Enum
 
 
 class EngineeringTermCategory(Enum):
-    """Categories of engineering terms"""
+    """Categories of engineering terms (kept for compatibility)"""
     GENERAL = "general"
     CODING = "coding"
     PROCESSING = "processing"
@@ -27,182 +26,46 @@ class EngineeringTermCategory(Enum):
 
 
 class WaitingManager:
-    """Waiting Manager Class with simple spinner"""
-
-    # Engineering terms database - like Claude Code's vibe
-    ENGINEERING_TERMS = {
-        EngineeringTermCategory.GENERAL: [
-            "vibing", "processing", "working", "thinking", "computing",
-            "analyzing", "calculating", "optimizing", "synthesizing",
-            "evaluating", "processing", "computing", "rendering",
-            "compiling", "executing", "initializing", "loading",
-            "preparing", "configuring", "setting up", "warming up",
-            "syncing", "validating", "verifying", "checking",
-            "monitoring", "observing", "scanning", "parsing",
-            "indexing", "cataloging", "organizing", "structuring"
-        ],
-        EngineeringTermCategory.CODING: [
-            "coding", "programming", "developing", "engineering",
-            "architecting", "designing", "implementing", "debugging",
-            "refactoring", "optimizing", "profiling", "testing",
-            "documenting", "commenting", "formatting", "linting",
-            "building", "compiling", "packaging", "deploying",
-            "integrating", "merging", "branching", "committing",
-            "pushing", "pulling", "cloning", "forking"
-        ],
-        EngineeringTermCategory.PROCESSING: [
-            "processing", "computing", "calculating", "analyzing",
-            "synthesizing", "transforming", "converting", "parsing",
-            "serializing", "deserializing", "encoding", "decoding",
-            "encrypting", "decrypting", "compressing", "decompressing",
-            "filtering", "sorting", "searching", "matching",
-            "comparing", "validating", "verifying", "authenticating",
-            "authorizing", "logging", "tracking", "monitoring"
-        ],
-        EngineeringTermCategory.ANALYZING: [
-            "analyzing", "scanning", "parsing", "indexing",
-            "cataloging", "classifying", "categorizing", "tagging",
-            "labeling", "annotating", "summarizing", "extracting",
-            "abstracting", "condensing", "simplifying", "clarifying",
-            "interpreting", "understanding", "comprehending",
-            "evaluating", "assessing", "rating", "scoring",
-            "ranking", "prioritizing", "filtering", "selecting"
-        ],
-        EngineeringTermCategory.UPLOADING: [
-            "uploading", "transferring", "sending", "transmitting",
-            "streaming", "pushing", "syncing", "backing up",
-            "archiving", "storing", "saving", "caching",
-            "buffering", "queuing", "scheduling", "dispatching",
-            "routing", "forwarding", "redirecting", "proxy-ing",
-            "load balancing", "scaling", "replicating", "mirroring"
-        ],
-        EngineeringTermCategory.COMPRESSING: [
-            "compressing", "archiving", "packaging", "bundling",
-            "zipping", "tarring", "gzipping", "bzipping",
-            "minifying", "uglifying", "obfuscating", "encrypting",
-            "encoding", "serializing", "streamlining", "optimizing",
-            "deduplicating", "consolidating", "aggregating",
-            "merging", "combining", "joining", "concatenating"
-        ],
-        EngineeringTermCategory.GENERATING: [
-            "generating", "creating", "producing", "manufacturing",
-            "fabricating", "constructing", "building", "assembling",
-            "composing", "writing", "drafting", "editing",
-            "revising", "polishing", "refining", "perfecting",
-            "finalizing", "completing", "finishing", "wrapping up",
-            "delivering", "presenting", "displaying", "showing"
-        ]
-    }
-
-    # Action suffixes
-    ACTION_SUFFIXES = [
-        "data", "files", "content", "code", "project",
-        "system", "network", "database", "cache", "memory",
-        "process", "thread", "task", "job", "request",
-        "response", "payload", "stream", "buffer", "queue",
-        "log", "metric", "stat", "report", "document",
-        "readme", "config", "settings", "environment", "context"
-    ]
-
-    # Spinner frames
-    SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    """Waiting Manager Class with typing effect only"""
 
     def __init__(self, title: str = "Processing", category: EngineeringTermCategory = None):
         """
         Initialize waiting manager
 
         Args:
-            title: Waiting indicator title
-            category: Engineering term category
+            title: Waiting indicator title (not used in display)
+            category: Engineering term category (used for message selection)
         """
         self.title = title
         self.category = category or EngineeringTermCategory.GENERAL
         self._running = False
-        self._spinner_thread = None
-        self._current_message = ""
-        self._spinner_index = 0
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
         self._typing_active = False
-
-    def _get_random_term(self) -> str:
-        """Get a random engineering term"""
-        terms = self.ENGINEERING_TERMS.get(self.category, self.ENGINEERING_TERMS[EngineeringTermCategory.GENERAL])
-        return random.choice(terms)
-
-    def _get_random_suffix(self) -> str:
-        """Get a random action suffix"""
-        return random.choice(self.ACTION_SUFFIXES)
-
-    def _generate_engineering_message(self) -> str:
-        """Generate a random engineering-style message"""
-        term = self._get_random_term()
-        suffix = self._get_random_suffix()
-
-        # Sometimes add adjectives or adverbs
-        adjectives = ["", "efficiently ", "quickly ", "carefully ", "thoroughly ", "systematically "]
-        adverb = random.choice(adjectives)
-
-        # Format variations
-        formats = [
-            f"{adverb}{term} {suffix}",
-            f"{term} {suffix} {adverb}",
-            f"{term.upper()} {suffix.upper()}",
-            f"{term}... {suffix}...",
-            f"{term}-{suffix}",
-        ]
-
-        return random.choice(formats)
-
-    def _spinner_loop(self):
-        """Spinner animation loop"""
-        while not self._stop_event.is_set():
-            with self._lock:
-                if self._typing_active:
-                    # When typing effect is active, don't show spinner
-                    # Just clear any leftover text
-                    sys.stdout.write('\r' + ' ' * 80 + '\r')
-                    sys.stdout.flush()
-                else:
-                    spinner_char = self.SPINNER_FRAMES[self._spinner_index % len(self.SPINNER_FRAMES)]
-                    display_text = f"{spinner_char} {self.title}: {self._current_message}"
-                    sys.stdout.write('\r' + display_text + ' ' * 10)  # Clear extra characters
-                    sys.stdout.flush()
-                    self._spinner_index += 1
-            time.sleep(0.2)  # Slower spinner update
+        self._typing_thread = None
+        self._stop_typing_event = threading.Event()
 
     def start(self, message: str = None, total: Optional[int] = None):
         """
         Start waiting indicator
 
         Args:
-            message: Initial message
-            total: Total steps (if known) - ignored for simple spinner
+            message: Initial message (ignored, typing effect will show its own messages)
+            total: Total steps (if known) - ignored
         """
         self._running = True
         self._stop_event.clear()
-        self._current_message = message or self._generate_engineering_message()
-        
-        # Start spinner thread
-        self._spinner_thread = threading.Thread(target=self._spinner_loop, daemon=True)
-        self._spinner_thread.start()
+        # No spinner thread needed
 
     def update(self, message: str = None, progress: Optional[float] = None):
         """
-        Update waiting status
+        Update waiting status (not used for typing effect)
 
         Args:
-            message: New message
+            message: New message (ignored)
             progress: Progress (between 0.0 and 1.0) - ignored
         """
-        if not self._running:
-            return
-        
-        with self._lock:
-            if message:
-                self._current_message = message
-            else:
-                self._current_message = self._generate_engineering_message()
+        pass  # Typing effect manages its own messages
 
     def stop(self, message: str = "Done!"):
         """
@@ -213,51 +76,24 @@ class WaitingManager:
         """
         self._running = False
         self._stop_event.set()
-        if self._spinner_thread:
-            self._spinner_thread.join(timeout=0.5)
+        
+        # Stop typing effect if active
+        self.stop_typing()
         
         # Clear the line and show completion message
         sys.stdout.write('\r' + ' ' * 80 + '\r')  # Clear line
         sys.stdout.write(f"✓ {message}\n")
         sys.stdout.flush()
 
-    def cycle_random_messages(self, interval: float = 1.5, count: Optional[int] = None):
-        """
-        Cycle through random engineering messages
-
-        Args:
-            interval: Message switch interval (seconds)
-            count: Number of messages to cycle (None for infinite)
-        """
-        self._stop_cycling_event = threading.Event()
-        self._cycling_thread = None
-
-        def cycle():
-            messages_generated = 0
-            while not self._stop_cycling_event.is_set():
-                if count is not None and messages_generated >= count:
-                    break
-
-                message = self._generate_engineering_message()
-                self.update(message)
-                messages_generated += 1
-                # Use wait with timeout to allow immediate stop
-                if self._stop_cycling_event.wait(timeout=interval):
-                    break
-
-        self._cycling_thread = threading.Thread(target=cycle, daemon=True)
-        self._cycling_thread.start()
-
     def cycle_typing_messages(self, messages: List[str], interval: float = 3.0):
         """
-        Cycle through messages with typing effect
+        Cycle through messages with typing effect including backspace
 
         Args:
             messages: List of messages to display
             interval: Time between message cycles (seconds)
         """
-        self._stop_typing_event = threading.Event()
-        self._typing_thread = None
+        self._stop_typing_event.clear()
         self._typing_active = True
 
         def typing_cycle():
@@ -265,49 +101,54 @@ class WaitingManager:
                 for msg in messages:
                     if self._stop_typing_event.is_set():
                         break
-                    # Clear current line and show typing effect
-                    with self._lock:
-                        sys.stdout.write('\r' + ' ' * 80 + '\r')
-                        sys.stdout.flush()
-                        for i, char in enumerate(msg):
-                            if self._stop_typing_event.is_set():
-                                break
-                            sys.stdout.write(char)
-                            sys.stdout.flush()
-                            time.sleep(0.05)
-                        # Hold message for a moment
-                        if self._stop_typing_event.wait(timeout=1.0):
+                    
+                    # Clear line
+                    sys.stdout.write('\r' + ' ' * 80 + '\r')
+                    sys.stdout.flush()
+                    
+                    # Type out message character by character
+                    for i, char in enumerate(msg):
+                        if self._stop_typing_event.is_set():
                             break
-                        # Backspace effect (optional)
-                        for i in range(len(msg)):
-                            if self._stop_typing_event.is_set():
-                                break
-                            sys.stdout.write('\b \b')
-                            sys.stdout.flush()
-                            time.sleep(0.03)
+                        sys.stdout.write(char)
+                        sys.stdout.flush()
+                        time.sleep(0.03)  # Typing speed
+                    
+                    # Hold message for a short moment
+                    if self._stop_typing_event.wait(timeout=0.5):
+                        break
+                    
+                    # Backspace effect - delete character by character
+                    for i in range(len(msg)):
+                        if self._stop_typing_event.is_set():
+                            break
+                        sys.stdout.write('\b \b')  # Backspace and clear
+                        sys.stdout.flush()
+                        time.sleep(0.02)  # Backspace speed
+                    
+                    # Ensure line is completely cleared after backspace
+                    sys.stdout.write('\r' + ' ' * 80 + '\r')
+                    sys.stdout.flush()
+                    
                     # Wait before next message
                     if self._stop_typing_event.wait(timeout=interval):
                         break
+            
             # Mark typing as inactive when loop ends
             self._typing_active = False
+            # Clear line when typing stops
+            sys.stdout.write('\r' + ' ' * 80 + '\r')
+            sys.stdout.flush()
 
         self._typing_thread = threading.Thread(target=typing_cycle, daemon=True)
         self._typing_thread.start()
 
     def stop_typing(self):
         """Stop typing effect"""
-        if hasattr(self, '_stop_typing_event'):
-            self._stop_typing_event.set()
-        if hasattr(self, '_typing_thread') and self._typing_thread:
+        self._stop_typing_event.set()
+        if self._typing_thread:
             self._typing_thread.join(timeout=0.5)
         self._typing_active = False
-
-    def stop_cycling(self):
-        """Stop message cycling"""
-        if hasattr(self, '_stop_cycling_event'):
-            self._stop_cycling_event.set()
-        if self._cycling_thread:
-            self._cycling_thread.join(timeout=0.5)
 
 
 @contextmanager
@@ -318,7 +159,7 @@ def waiting_context(title: str = "Processing", message: str = None,
 
     Args:
         title: Waiting indicator title
-        message: Initial message
+        message: Initial message (ignored)
         category: Engineering term category
 
     Yields:
@@ -327,49 +168,49 @@ def waiting_context(title: str = "Processing", message: str = None,
     manager = WaitingManager(title, category)
     manager.start(message)
     
-    # Define comforting messages for each category
+    # Define comforting messages for each category - avoid misleading "即将完成"
     comforting_messages = {
         EngineeringTermCategory.PROCESSING: [
             "等待API回复中...",
             "正在处理您的请求...",
-            "即将完成...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.COMPRESSING: [
             "正在压缩项目文件...",
             "打包中...",
-            "即将完成压缩...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.UPLOADING: [
             "正在上传文件...",
             "传输中...",
-            "即将完成上传...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.ANALYZING: [
             "正在分析项目...",
             "解析中...",
-            "即将完成分析...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.GENERATING: [
             "正在生成README...",
             "撰写中...",
-            "即将完成生成...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.CODING: [
             "正在处理代码...",
             "编码中...",
-            "即将完成...",
-            "请稍候..."
+            "请稍候...",
+            "处理中..."
         ],
         EngineeringTermCategory.GENERAL: [
             "处理中...",
             "请稍候...",
-            "即将完成...",
-            "等待中..."
+            "等待中...",
+            "进行中..."
         ]
     }
     
@@ -410,41 +251,25 @@ generate_manager = WaitingManager("Generating", EngineeringTermCategory.GENERATI
 
 if __name__ == "__main__":
     # Test code
-    print("Testing Waiting Manager...")
+    print("Testing Waiting Manager with typing effect...")
 
-    # Test 1: Basic waiting with random messages
-    print("\nTest 1: Basic waiting with engineering terms")
-    with waiting_context("Testing", category=EngineeringTermCategory.CODING) as manager:
-        time.sleep(3)
-        manager.update()  # Random message
-        time.sleep(2)
-        manager.update("Custom message override")
-        time.sleep(1)
+    # Test 1: Compressing category
+    print("\nTest 1: Compressing category")
+    with waiting_context("Compressing", category=EngineeringTermCategory.COMPRESSING) as manager:
+        time.sleep(5)
 
-    # Test 2: Message cycling
-    print("\nTest 2: Cycling through engineering terms")
-    manager = WaitingManager("Cycling Test", EngineeringTermCategory.PROCESSING)
-    manager.start("Starting cycle...")
-    manager.cycle_random_messages(interval=1.0, count=8)
-    time.sleep(8)
-    manager.stop_cycling()
-    manager.stop("Cycle complete")
+    # Test 2: Uploading category
+    print("\nTest 2: Uploading category")
+    with waiting_context("Uploading", category=EngineeringTermCategory.UPLOADING) as manager:
+        time.sleep(5)
 
-    # Test 3: Different categories
-    print("\nTest 3: Different engineering categories")
-    categories = [
-        ("Coding", EngineeringTermCategory.CODING),
-        ("Analyzing", EngineeringTermCategory.ANALYZING),
-        ("Generating", EngineeringTermCategory.GENERATING),
-        ("Uploading", EngineeringTermCategory.UPLOADING),
-    ]
+    # Test 3: Processing category (API)
+    print("\nTest 3: Processing category")
+    with waiting_context("API Processing", category=EngineeringTermCategory.PROCESSING) as manager:
+        time.sleep(5)
 
-    for title, category in categories:
-        with waiting_context(title, category=category) as manager:
-            time.sleep(2)
-            manager.update()
-            time.sleep(1)
-
-    # Test 4: Typing effect
-    print("\nTest 4: Typing effect")
+    # Test 4: Direct typing effect
+    print("\nTest 4: Direct typing effect")
     simulate_typing_effect("Generating README documentation... Please wait...")
+
+    print("\nAll tests completed!")
