@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-WTFE 在线服务模块
+WTFE Online Service Module
 
-提供与WTFE API在线服务交互的功能。
-这是一个可选模块，用户可以选择使用在线服务或本地分析。
+Provides functionality to interact with WTFE API online services.
+This is an optional module, users can choose to use online services or local analysis.
 """
 
 import sys
@@ -12,6 +12,18 @@ import json
 import requests
 from typing import Optional, Dict, Any
 from getpass import getpass
+
+# Import waiting manager for elegant waiting effects
+try:
+    from .waiting_manager import (
+        waiting_context,
+        EngineeringTermCategory,
+        simulate_typing_effect
+    )
+    WAITING_MANAGER_AVAILABLE = True
+except ImportError:
+    WAITING_MANAGER_AVAILABLE = False
+    print("Note: Waiting manager not available, using simple progress indicators")
 
 # API地址 - 连接到线上服务
 API_BASE_URL = "https://wtfe.aozai.top"
@@ -63,10 +75,10 @@ class WTFEOnlineClient:
             pass
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
-        """发送HTTP请求"""
+        """Send HTTP request"""
         url = f"{self.base_url}{endpoint}"
 
-        # 添加认证头
+        # Add authentication headers
         headers = kwargs.get('headers', {})
         if self.access_token:
             headers['Authorization'] = f"Bearer {self.access_token}"
@@ -75,31 +87,51 @@ class WTFEOnlineClient:
 
         kwargs['headers'] = headers
 
-        # 添加SSL验证选项（针对自签名证书或SSL问题）
+        # Add SSL verification options (for self-signed certificates or SSL issues)
         if 'verify' not in kwargs:
-            # 默认禁用SSL验证以解决证书问题
+            # Disable SSL verification by default to resolve certificate issues
             kwargs['verify'] = False
-            # 添加警告抑制
+            # Add warning suppression
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         try:
-            response = self.session.request(method, url, **kwargs)
-            response.raise_for_status()
-            return response.json()
+            # Show waiting indicator for API requests
+            if WAITING_MANAGER_AVAILABLE and method in ['POST', 'PUT', 'PATCH']:
+                with waiting_context("API Processing", category=EngineeringTermCategory.PROCESSING) as manager:
+                    response = self.session.request(method, url, **kwargs)
+                    response.raise_for_status()
+                    return response.json()
+            else:
+                response = self.session.request(method, url, **kwargs)
+                response.raise_for_status()
+                return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"请求失败: {e}")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect(f"Request failed: {e}")
+            else:
+                print(f"Request failed: {e}")
+
             if hasattr(e, 'response') and e.response is not None:
                 try:
                     error_data = e.response.json()
-                    print(f"错误详情: {error_data}")
+                    if WAITING_MANAGER_AVAILABLE:
+                        simulate_typing_effect(f"Error details: {error_data}")
+                    else:
+                        print(f"Error details: {error_data}")
                 except:
-                    print(f"响应内容: {e.response.text}")
+                    if WAITING_MANAGER_AVAILABLE:
+                        simulate_typing_effect(f"Response content: {e.response.text}")
+                    else:
+                        print(f"Response content: {e.response.text}")
             sys.exit(1)
 
     def register(self, username: str, email: str, password: str) -> Dict[str, Any]:
-        """注册新用户"""
-        print(f"正在注册用户: {username} ({email})")
+        """Register new user"""
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"Registering user: {username} ({email})")
+        else:
+            print(f"Registering user: {username} ({email})")
 
         data = {
             "username": username,
@@ -109,27 +141,37 @@ class WTFEOnlineClient:
 
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/register", json=data)
 
-        print(f"✓ 注册成功！用户ID: {result.get('id')}")
-        print(f"  请检查邮箱 {email} 中的验证邮件以激活账户")
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"✓ Registration successful! User ID: {result.get('id')}")
+            simulate_typing_effect(f"  Please check your email {email} for verification link")
+        else:
+            print(f"✓ Registration successful! User ID: {result.get('id')}")
+            print(f"  Please check your email {email} for verification link")
         return result
 
     def login(self, username: str, password: str) -> Dict[str, Any]:
-        """用户登录"""
-        print(f"正在登录: {username}")
+        """User login"""
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"Logging in: {username}")
+        else:
+            print(f"Logging in: {username}")
 
-        # 使用OAuth2表单格式
+        # Use OAuth2 form format
         data = {
             "username": username,
             "password": password
         }
 
-        # 使用表单数据而不是JSON
+        # Use form data instead of JSON
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/login", data=data)
 
         self.access_token = result.get("access_token")
-        print(f"✓ 登录成功！")
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"✓ Login successful!")
+        else:
+            print(f"✓ Login successful!")
 
-        # 保存访问令牌到配置文件
+        # Save access token to config file
         if self.access_token:
             try:
                 import yaml
@@ -142,7 +184,7 @@ class WTFEOnlineClient:
                     'wtfe_api_url': API_BASE_URL
                 }
 
-                # 读取现有配置（如果有）
+                # Read existing config (if any)
                 try:
                     with open(api_config_path, 'r', encoding='utf-8') as f:
                         existing_config = yaml.safe_load(f) or {}
@@ -152,15 +194,24 @@ class WTFEOnlineClient:
 
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
-                print(f"✓ 登录信息已保存到 {api_config_path}")
+                if WAITING_MANAGER_AVAILABLE:
+                    simulate_typing_effect(f"✓ Login information saved to {api_config_path}")
+                else:
+                    print(f"✓ Login information saved to {api_config_path}")
             except Exception as e:
-                print(f"警告：无法保存登录信息: {e}")
+                if WAITING_MANAGER_AVAILABLE:
+                    simulate_typing_effect(f"Warning: Unable to save login information: {e}")
+                else:
+                    print(f"Warning: Unable to save login information: {e}")
 
         return result
 
     def resend_verification_email(self, email: str) -> Dict[str, Any]:
-        """重新发送验证邮件"""
-        print(f"正在重新发送验证邮件到: {email}")
+        """Resend verification email"""
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"Resending verification email to: {email}")
+        else:
+            print(f"Resending verification email to: {email}")
 
         data = {
             "email": email
@@ -169,19 +220,31 @@ class WTFEOnlineClient:
         result = self._make_request("POST", f"{API_V1_PREFIX}/auth/resend-verification", json=data)
 
         if result.get("success"):
-            print(f"✓ 验证邮件已重新发送到: {email}")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect(f"✓ Verification email resent to: {email}")
+            else:
+                print(f"✓ Verification email resent to: {email}")
         else:
-            print(f"✗ 验证邮件发送失败: {result.get('message', '未知错误')}")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect(f"✗ Failed to send verification email: {result.get('message', 'Unknown error')}")
+            else:
+                print(f"✗ Failed to send verification email: {result.get('message', 'Unknown error')}")
 
         return result
 
     def create_api_key(self, name: str = "default") -> Dict[str, Any]:
-        """创建API密钥"""
+        """Create API key"""
         if not self.access_token:
-            print("错误：请先登录")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect("Error: Please login first")
+            else:
+                print("Error: Please login first")
             sys.exit(1)
 
-        print(f"正在创建API密钥: {name}")
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"Creating API key: {name}")
+        else:
+            print(f"Creating API key: {name}")
 
         data = {
             "name": name
@@ -191,12 +254,17 @@ class WTFEOnlineClient:
 
         api_key = result.get("api_key")
         if api_key:
-            print(f"✓ API密钥创建成功！")
-            print(f"  API密钥: {api_key}")
-            print(f"  警告：此密钥只会显示一次，请妥善保存")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect(f"✓ API key created successfully!")
+                simulate_typing_effect(f"  API key: {api_key}")
+                simulate_typing_effect(f"  Warning: This key will only be shown once, please save it securely")
+            else:
+                print(f"✓ API key created successfully!")
+                print(f"  API key: {api_key}")
+                print(f"  Warning: This key will only be shown once, please save it securely")
             self.api_key = api_key
 
-            # 保存API密钥到配置文件
+            # Save API key to config file
             try:
                 import yaml
                 from pathlib import Path
@@ -210,7 +278,7 @@ class WTFEOnlineClient:
                     'wtfe_api_url': API_BASE_URL
                 }
 
-                # 读取现有配置（如果有）
+                # Read existing config (if any)
                 try:
                     with open(api_config_path, 'r', encoding='utf-8') as f:
                         existing_config = yaml.safe_load(f) or {}
@@ -220,11 +288,20 @@ class WTFEOnlineClient:
 
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
-                print(f"✓ API密钥已保存到 {api_config_path}")
+                if WAITING_MANAGER_AVAILABLE:
+                    simulate_typing_effect(f"✓ API key saved to {api_config_path}")
+                else:
+                    print(f"✓ API key saved to {api_config_path}")
             except Exception as e:
-                print(f"警告：无法保存API密钥: {e}")
+                if WAITING_MANAGER_AVAILABLE:
+                    simulate_typing_effect(f"Warning: Unable to save API key: {e}")
+                else:
+                    print(f"Warning: Unable to save API key: {e}")
         else:
-            print("✗ 未能获取API密钥")
+            if WAITING_MANAGER_AVAILABLE:
+                simulate_typing_effect("✗ Failed to get API key")
+            else:
+                print("✗ Failed to get API key")
 
         return result
 
@@ -294,56 +371,169 @@ class WTFEOnlineClient:
 
     def analyze_project(self, project_path: str, detail: bool = False) -> Dict[str, Any]:
         """
-        分析项目
+        Analyze project
 
         Args:
-            project_path: 项目路径
-            detail: 是否启用详细分析模式
+            project_path: Project path
+            detail: Whether to enable detailed analysis mode
 
         Returns:
-            分析结果
+            Analysis result
         """
-        print(f"正在分析项目: {project_path}")
-        if detail:
-            print("详细分析模式已启用")
+        if WAITING_MANAGER_AVAILABLE:
+            simulate_typing_effect(f"Analyzing project: {project_path}")
+            if detail:
+                simulate_typing_effect("Detailed analysis mode enabled")
+        else:
+            print(f"Analyzing project: {project_path}")
+            if detail:
+                print("Detailed analysis mode enabled")
 
-        # 检查文件或目录是否存在
+        # Check if file or directory exists
         from pathlib import Path
         path_obj = Path(project_path)
         if not path_obj.exists():
-            raise FileNotFoundError(f"路径不存在: {project_path}")
+            raise FileNotFoundError(f"Path does not exist: {project_path}")
 
-        # 如果是目录，需要压缩成tar.gz
+        # If it's a directory, need to compress to tar.gz
         if path_obj.is_dir():
             import tempfile
             import tarfile
             import os
 
-            print("检测到目录，正在压缩...")
+            if WAITING_MANAGER_AVAILABLE:
+                # Use waiting context for compression
+                with waiting_context("Compressing", category=EngineeringTermCategory.COMPRESSING) as manager:
+                    # Create temporary file in dedicated wtfe subdirectory
+                    temp_dir = tempfile.gettempdir()
+                    wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
 
-            # 使用更安全的方式创建临时文件，放在专门的wtfe子目录中
-            temp_dir = tempfile.gettempdir()
-            wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
+                    # Ensure wtfe subdirectory exists
+                    os.makedirs(wtfe_temp_dir, exist_ok=True)
 
-            # 确保wtfe子目录存在
-            os.makedirs(wtfe_temp_dir, exist_ok=True)
+                    temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
+                    tar_path = os.path.join(wtfe_temp_dir, temp_filename)
 
-            temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
-            tar_path = os.path.join(wtfe_temp_dir, temp_filename)
+                    try:
+                        # Create tar.gz file
+                        manager.update("Creating archive...")
+                        with tarfile.open(tar_path, 'w:gz') as tar:
+                            tar.add(project_path, arcname=os.path.basename(project_path))
 
-            try:
-                # 创建tar.gz文件
-                with tarfile.open(tar_path, 'w:gz') as tar:
-                    tar.add(project_path, arcname=os.path.basename(project_path))
+                        manager.update("Archive created")
 
-                print(f"已创建压缩文件: {tar_path}")
+                        # Upload file - use with statement to ensure file handle is properly closed
+                        result = None
+                        with open(tar_path, 'rb') as f:
+                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
 
-                # 上传文件 - 使用with语句确保文件句柄正确关闭
-                result = None
-                with open(tar_path, 'rb') as f:
-                    files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                            # Build request parameters
+                            params = {}
+                            if detail:
+                                params['detail'] = 'true'
 
-                    # 构建请求参数
+                            # Switch to uploading context
+                            manager.update("Preparing upload...")
+
+                        # Upload with separate waiting context
+                        with waiting_context("Uploading", category=EngineeringTermCategory.UPLOADING) as upload_manager:
+                            with open(tar_path, 'rb') as f:
+                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                                result = self._make_request(
+                                    "POST",
+                                    f"{API_V1_PREFIX}/analyze-and-generate",
+                                    files=files,
+                                    params=params
+                                )
+
+                        return result
+                    finally:
+                        # Clean up temporary file - use retry mechanism to ensure file deletion
+                        self._safe_delete_file(tar_path)
+            else:
+                # Fallback without waiting manager
+                print("Detected directory, compressing...")
+
+                # Create temporary file in dedicated wtfe subdirectory
+                temp_dir = tempfile.gettempdir()
+                wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
+
+                # Ensure wtfe subdirectory exists
+                os.makedirs(wtfe_temp_dir, exist_ok=True)
+
+                temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
+                tar_path = os.path.join(wtfe_temp_dir, temp_filename)
+
+                try:
+                    # Create tar.gz file
+                    with tarfile.open(tar_path, 'w:gz') as tar:
+                        tar.add(project_path, arcname=os.path.basename(project_path))
+
+                    print(f"Created compressed file: {tar_path}")
+
+                    # Upload file - use with statement to ensure file handle is properly closed
+                    result = None
+                    with open(tar_path, 'rb') as f:
+                        files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+
+                        # Build request parameters
+                        params = {}
+                        if detail:
+                            params['detail'] = 'true'
+
+                        result = self._make_request(
+                            "POST",
+                            f"{API_V1_PREFIX}/analyze-and-generate",
+                            files=files,
+                            params=params
+                        )
+
+                    return result
+                finally:
+                    # Clean up temporary file - use retry mechanism to ensure file deletion
+                    self._safe_delete_file(tar_path)
+        else:
+            # If it's a file, upload directly
+            if WAITING_MANAGER_AVAILABLE:
+                with waiting_context("Uploading", category=EngineeringTermCategory.UPLOADING) as manager:
+                    with open(project_path, 'rb') as f:
+                        # Determine MIME type based on file extension
+                        if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
+                            mime_type = 'application/gzip'
+                        elif project_path.endswith('.zip'):
+                            mime_type = 'application/zip'
+                        else:
+                            mime_type = 'application/octet-stream'
+
+                        files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
+
+                        # Build request parameters
+                        params = {}
+                        if detail:
+                            params['detail'] = 'true'
+
+                        result = self._make_request(
+                            "POST",
+                            f"{API_V1_PREFIX}/analyze-and-generate",
+                            files=files,
+                            params=params
+                        )
+
+                    return result
+            else:
+                print(f"Uploading file: {project_path}")
+                with open(project_path, 'rb') as f:
+                    # Determine MIME type based on file extension
+                    if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
+                        mime_type = 'application/gzip'
+                    elif project_path.endswith('.zip'):
+                        mime_type = 'application/zip'
+                    else:
+                        mime_type = 'application/octet-stream'
+
+                    files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
+
+                    # Build request parameters
                     params = {}
                     if detail:
                         params['detail'] = 'true'
@@ -356,36 +546,6 @@ class WTFEOnlineClient:
                     )
 
                 return result
-            finally:
-                # 清理临时文件 - 使用重试机制确保文件删除
-                self._safe_delete_file(tar_path)
-        else:
-            # 如果是文件，直接上传
-            print(f"上传文件: {project_path}")
-            with open(project_path, 'rb') as f:
-                # 根据文件扩展名确定MIME类型
-                if project_path.endswith('.tar.gz') or project_path.endswith('.tgz'):
-                    mime_type = 'application/gzip'
-                elif project_path.endswith('.zip'):
-                    mime_type = 'application/zip'
-                else:
-                    mime_type = 'application/octet-stream'
-
-                files = {'zip_file': (os.path.basename(project_path), f, mime_type)}
-
-                # 构建请求参数
-                params = {}
-                if detail:
-                    params['detail'] = 'true'
-
-                result = self._make_request(
-                    "POST",
-                    f"{API_V1_PREFIX}/analyze-and-generate",
-                    files=files,
-                    params=params
-                )
-
-            return result
 
 
 def interactive_register():

@@ -1,3 +1,4 @@
 PyYAML>=6.0
 requests>=2.25.0
 tiktoken>=0.5.0
+alive-progress>=3.0.0
