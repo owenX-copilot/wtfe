@@ -446,42 +446,7 @@ class WTFEOnlineClient:
                             tar.add(project_path, arcname=os.path.basename(project_path))
 
                         manager.update("Archive created")
-
-                        # Upload file - use with statement to ensure file handle is properly closed
-                        result = None
-                        with open(tar_path, 'rb') as f:
-                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-
-                            # Build request parameters
-                            params = {}
-                            if detail:
-                                params['detail'] = 'true'
-
-                            # Switch to uploading context
-                            manager.update("Preparing upload...")
-
-                    # Upload with separate waiting context
-                    if hasattr(EngineeringTermCategory, "UPLOADING"):
-                        with waiting_context("Uploading", category=getattr(EngineeringTermCategory, "UPLOADING")) as upload_manager:
-                            with open(tar_path, 'rb') as f:
-                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                                result = self._make_request(
-                                    "POST",
-                                    f"{API_V1_PREFIX}/analyze-and-generate",
-                                    files=files,
-                                    params=params
-                                )
-                    else:
-                        with waiting_context("Uploading") as upload_manager:
-                            with open(tar_path, 'rb') as f:
-                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                                result = self._make_request(
-                                    "POST",
-                                    f"{API_V1_PREFIX}/analyze-and-generate",
-                                    files=files,
-                                    params=params
-                                )
-                    return result
+                        manager.update("Preparing upload...")
                 else:
                     with waiting_context("Compressing") as manager:
                         manager.update("Creating archive...")
@@ -489,95 +454,28 @@ class WTFEOnlineClient:
                             tar.add(project_path, arcname=os.path.basename(project_path))
 
                         manager.update("Archive created")
+                        manager.update("Preparing upload...")
 
-                        # Upload file - use with statement to ensure file handle is properly closed
-                        result = None
-                        with open(tar_path, 'rb') as f:
-                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
+                # After compression is done, call _make_request
+                # The _make_request method will handle its own waiting context for API processing
+                with open(tar_path, 'rb') as f:
+                    files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
 
-                            # Build request parameters
-                            params = {}
-                            if detail:
-                                params['detail'] = 'true'
+                    # Build request parameters
+                    params = {}
+                    if detail:
+                        params['detail'] = 'true'
 
-                            # Switch to uploading context
-                            manager.update("Preparing upload...")
+                    result = self._make_request(
+                        "POST",
+                        f"{API_V1_PREFIX}/analyze-and-generate",
+                        files=files,
+                        params=params
+                    )
 
-                    # Upload with separate waiting context
-                    with waiting_context("Uploading") as upload_manager:
-                        with open(tar_path, 'rb') as f:
-                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                            result = self._make_request(
-                                "POST",
-                                f"{API_V1_PREFIX}/analyze-and-generate",
-                                files=files,
-                                params=params
-                            )
-                    return result
-                    # Create temporary file in dedicated wtfe subdirectory
-                    temp_dir = tempfile.gettempdir()
-                    wtfe_temp_dir = os.path.join(temp_dir, "wtfe")
-
-                    # Ensure wtfe subdirectory exists
-                    os.makedirs(wtfe_temp_dir, exist_ok=True)
-
-                    temp_filename = f"project_{os.urandom(8).hex()}.tar.gz"
-                    tar_path = os.path.join(wtfe_temp_dir, temp_filename)
-
-                    try:
-                        # Create tar.gz file
-                        manager.update("Creating archive...")
-                        with tarfile.open(tar_path, 'w:gz') as tar:
-                            tar.add(project_path, arcname=os.path.basename(project_path))
-
-                        manager.update("Archive created")
-
-                        # Upload file - use with statement to ensure file handle is properly closed
-                        result = None
-                        with open(tar_path, 'rb') as f:
-                            files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-
-                            # Build request parameters
-                            params = {}
-                            if detail:
-                                params['detail'] = 'true'
-
-                            # Switch to uploading context
-                            manager.update("Preparing upload...")
-
-                        # Upload with separate waiting context
-                        if WAITING_MANAGER_AVAILABLE and waiting_context and EngineeringTermCategory:
-                            with waiting_context("Uploading", category=getattr(EngineeringTermCategory, "UPLOADING", None)) as upload_manager:
-                                with open(tar_path, 'rb') as f:
-                                    files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                                    result = self._make_request(
-                                        "POST",
-                                        f"{API_V1_PREFIX}/analyze-and-generate",
-                                        files=files,
-                                        params=params
-                                    )
-                        else:
-                            with open(tar_path, 'rb') as f:
-                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                                result = self._make_request(
-                                    "POST",
-                                    f"{API_V1_PREFIX}/analyze-and-generate",
-                                    files=files,
-                                    params=params
-                                )
-                            with open(tar_path, 'rb') as f:
-                                files = {'zip_file': (f'{os.path.basename(project_path)}.tar.gz', f, 'application/gzip')}
-                                result = self._make_request(
-                                    "POST",
-                                    f"{API_V1_PREFIX}/analyze-and-generate",
-                                    files=files,
-                                    params=params
-                                )
-
-                        return result
-                    finally:
-                        # Clean up temporary file - use retry mechanism to ensure file deletion
-                        self._safe_delete_file(tar_path)
+                # Clean up temporary file
+                self._safe_delete_file(tar_path)
+                return result
             else:
                 # Fallback without waiting manager
                 print("Detected directory, compressing...")
