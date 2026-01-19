@@ -257,28 +257,31 @@ class WaitingManager:
         import threading
         import itertools
 
-        self._stop_cycling = False
+        self._stop_cycling_event = threading.Event()
         self._cycling_thread = None
 
         def cycle():
             messages_generated = 0
-            while not self._stop_cycling:
+            while not self._stop_cycling_event.is_set():
                 if count is not None and messages_generated >= count:
                     break
 
                 message = self._generate_engineering_message()
                 self.update(message)
                 messages_generated += 1
-                time.sleep(interval)
+                # Use wait with timeout to allow immediate stop
+                if self._stop_cycling_event.wait(timeout=interval):
+                    break
 
         self._cycling_thread = threading.Thread(target=cycle, daemon=True)
         self._cycling_thread.start()
 
     def stop_cycling(self):
         """Stop message cycling"""
-        self._stop_cycling = True
+        if hasattr(self, '_stop_cycling_event'):
+            self._stop_cycling_event.set()
         if self._cycling_thread:
-            self._cycling_thread.join(timeout=1.0)
+            self._cycling_thread.join(timeout=0.5)
 
 
 @contextmanager
