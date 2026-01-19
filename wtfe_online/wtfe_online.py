@@ -14,16 +14,37 @@ from typing import Optional, Dict, Any
 from getpass import getpass
 
 # Import waiting manager for elegant waiting effects
+WAITING_MANAGER_AVAILABLE = False
+waiting_context = None
+EngineeringTermCategory = None
+simulate_typing_effect = None
+
 try:
+    # First try relative import (works when module is part of package)
     from .waiting_manager import (
-        waiting_context,
-        EngineeringTermCategory,
-        simulate_typing_effect
+        waiting_context as wc,
+        EngineeringTermCategory as etc,
+        simulate_typing_effect as ste
     )
+    waiting_context = wc
+    EngineeringTermCategory = etc
+    simulate_typing_effect = ste
     WAITING_MANAGER_AVAILABLE = True
 except ImportError:
-    WAITING_MANAGER_AVAILABLE = False
-    print("Note: Waiting manager not available, using simple progress indicators")
+    try:
+        # Fallback to absolute import (works when running as script)
+        from waiting_manager import (
+            waiting_context as wc,
+            EngineeringTermCategory as etc,
+            simulate_typing_effect as ste
+        )
+        waiting_context = wc
+        EngineeringTermCategory = etc
+        simulate_typing_effect = ste
+        WAITING_MANAGER_AVAILABLE = True
+    except ImportError:
+        WAITING_MANAGER_AVAILABLE = False
+        print("Note: Waiting manager not available, using simple progress indicators")
 
 # API地址 - 连接到线上服务
 API_BASE_URL = "https://wtfe.aozai.top"
