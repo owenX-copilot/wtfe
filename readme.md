@@ -48,7 +48,7 @@ python wtfe.py --help
 
 ### 使用在线服务（可选）
 
-WTFE 提供了可选的在线API服务，支持用户认证和API密钥管理：
+WTFE 提供了完整的在线API服务，支持用户认证、API密钥管理和使用限制：
 
 ```bash
 # 用户注册
@@ -57,7 +57,7 @@ python wtfe.py auth register
 # 用户登录
 python wtfe.py auth login
 
-# 创建API密钥
+# 创建API密钥（每个用户最多2个）
 python wtfe.py auth api-key
 
 # 查看用户信息
@@ -95,6 +95,8 @@ python wtfe.py online ./your-project --detail
 - **SSL支持**：自动处理SSL证书问题，支持自签名证书
 - **文件上传**：支持目录（自动压缩为tar.gz）和文件（zip/tar.gz）上传
 - **详细模式**：支持 `--detail` 参数启用详细分析模式
+- **优雅等待效果**：内置等待管理器，提供打字机动画效果，让长时间操作不再枯燥
+- **智能README保存**：自动检测现有README文件，智能处理覆盖和备份，避免意外数据丢失
 
 ## 配置说明
 

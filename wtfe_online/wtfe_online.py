@@ -339,7 +339,7 @@ class WTFEOnlineClient:
 
         result = self._make_request("POST", f"{API_V1_PREFIX}/api-keys", json=data)
 
-        api_key = result.get("api_key")
+        api_key = result.get("key")
         if api_key:
             if WAITING_MANAGER_AVAILABLE and simulate_typing_effect:
                 simulate_typing_effect(f"✓ API key created successfully!")
