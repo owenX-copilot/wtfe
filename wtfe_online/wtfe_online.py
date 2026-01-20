@@ -161,17 +161,16 @@ class WTFEOnlineClient:
 
         # Add authentication headers
         headers = kwargs.get('headers', {})
+        # Both JWT and API key are required
         if self.access_token:
             headers['Authorization'] = f"Bearer {self.access_token}"
-        elif self.api_key:
-            # Send SHA256 hash of API key for security and to avoid bcrypt limitations
-            # Set in both X-API-Key and Authorization: Bearer headers as required
+        if self.api_key:
+            # Send SHA256 hash of API key
             api_key_hash = self._hash_api_key(self.api_key)
             print(f"DEBUG: API key: {self.api_key}")
             print(f"DEBUG: API key hash: {api_key_hash}")
             print(f"DEBUG: Hash length: {len(api_key_hash)}")
             headers['X-API-Key'] = api_key_hash
-            headers['Authorization'] = f"Bearer {api_key_hash}"
 
         kwargs['headers'] = headers
 
