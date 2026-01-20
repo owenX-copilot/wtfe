@@ -67,7 +67,7 @@ python wtfe.py auth user-info
 python wtfe.py auth resend-verification
 
 # 使用在线服务分析项目
-python wtfe.py online ./your-project --detail
+python wtfe.py online /path/to/your-project --detail
 ```
 
 **注意**：在线服务是可选的，推荐使用本地CLI自建分析环境以保护隐私和降低成本。
@@ -87,7 +87,7 @@ python wtfe.py online ./your-project --detail
 
 ### 在线服务特性
 - **用户认证系统**：注册、登录、邮箱验证
-- **API密钥管理**：创建、管理API密钥，每个用户最多2个密钥
+- **API密钥管理**：创建API密钥，每个用户最多2个密钥
 - **使用限制**：每个API密钥每天最多10次调用
 - **隐私保护**：所有分析数据通过HTTPS加密传输
 - **免费额度**：提供有限的免费调用额度（防止滥用）
