@@ -196,15 +196,7 @@ def handle_auth_command(args):
                 try:
                     with open(api_config_path, 'r', encoding='utf-8') as f:
                         cfg = yaml.safe_load(f) or {}
-                    # Truncate API key to 72 bytes to avoid server-side validation errors
-                    if len(api_key.encode('utf-8')) > 72:
-                        # Truncate to 72 bytes, not characters
-                        api_key_bytes = api_key.encode('utf-8')[:72]
-                        api_key = api_key_bytes.decode('utf-8', errors='ignore')
-                        # Remove any partial characters at the end
-                        while api_key_bytes and (api_key_bytes[-1] & 0b11000000) == 0b10000000:
-                            api_key_bytes = api_key_bytes[:-1]
-                            api_key = api_key_bytes.decode('utf-8', errors='ignore')
+                    # Save original API key (no truncation needed with SHA256 hashing)
                     cfg['wtfe_api_key'] = api_key
                     cfg['wtfe_api_key_name'] = name
                     cfg['wtfe_api_key_created'] = time.strftime("%Y-%m-%d %H:%M:%S")

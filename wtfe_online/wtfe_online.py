@@ -137,7 +137,7 @@ class WTFEOnlineClient:
                     # 加载API密钥
                     api_key = config.get('wtfe_api_key')
                     if api_key:
-                        self.api_key = self._truncate_api_key(api_key)
+                        self.api_key = api_key  # Load original API key
                         print(f"✓ 从配置文件加载API密钥")
 
                     # 加载访问令牌
@@ -164,9 +164,11 @@ class WTFEOnlineClient:
         if self.access_token:
             headers['Authorization'] = f"Bearer {self.access_token}"
         elif self.api_key:
-            # Truncate API key to 72 bytes to avoid server-side validation errors
-            api_key = self._truncate_api_key(self.api_key)
-            headers['X-API-Key'] = api_key
+            # Send SHA256 hash of API key for security and to avoid bcrypt limitations
+            # Set in both X-API-Key and Authorization: Bearer headers as required
+            api_key_hash = self._hash_api_key(self.api_key)
+            headers['X-API-Key'] = api_key_hash
+            headers['Authorization'] = f"Bearer {api_key_hash}"
 
         kwargs['headers'] = headers
 
@@ -351,7 +353,7 @@ class WTFEOnlineClient:
                 print(f"✓ API key created successfully!")
                 print(f"  API key: {api_key}")
                 print(f"  Warning: This key will only be shown once, please save it securely")
-            self.api_key = self._truncate_api_key(api_key)
+            self.api_key = api_key  # Store original API key
 
             # Save API key to config file
             try:
@@ -361,7 +363,7 @@ class WTFEOnlineClient:
 
                 api_config_path = Path(__file__).parent.parent / 'wtfe_api_config.yaml'
                 config_data = {
-                    'wtfe_api_key': self._truncate_api_key(api_key),
+                    'wtfe_api_key': api_key,  # Save original API key
                     'wtfe_api_key_name': name,
                     'wtfe_api_key_created': time.strftime("%Y-%m-%d %H:%M:%S"),
                     'wtfe_api_url': API_BASE_URL
@@ -447,21 +449,18 @@ class WTFEOnlineClient:
                 print(f"警告：无法删除临时文件 {file_path}: {e}")
                 return
 
-    def _truncate_api_key(self, api_key: str) -> str:
-        """Truncate API key to 72 bytes to avoid server-side validation errors"""
-        if len(api_key.encode('utf-8')) > 72:
-            # Truncate to 72 bytes, not characters
-            api_key_bytes = api_key.encode('utf-8')[:72]
-            api_key = api_key_bytes.decode('utf-8', errors='ignore')
-            # Remove any partial characters at the end
-            while api_key_bytes and (api_key_bytes[-1] & 0b11000000) == 0b10000000:
-                api_key_bytes = api_key_bytes[:-1]
-                api_key = api_key_bytes.decode('utf-8', errors='ignore')
-        return api_key
+    def _hash_api_key(self, api_key: str) -> str:
+        """Hash API key using SHA256 for secure transmission"""
+        import hashlib
+        # Create SHA256 hash of the API key
+        hash_obj = hashlib.sha256(api_key.encode('utf-8'))
+        # Return hex digest (64 characters)
+        return hash_obj.hexdigest()
 
     def set_api_key(self, api_key: str) -> None:
         """设置API密钥（用于在线模式）"""
-        self.api_key = self._truncate_api_key(api_key)
+        # Store the original API key, we'll hash it when sending
+        self.api_key = api_key
         print(f"✓ API密钥已设置")
 
     def clear_auth(self) -> None:
