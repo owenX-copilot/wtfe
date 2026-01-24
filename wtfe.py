@@ -154,11 +154,23 @@ def handle_auth_command(args):
             wtfe_root = get_wtfe_root()
             api_config_path = wtfe_root / 'wtfe_api_config.yaml'
             try:
-                config_data = {
+                # 读取现有配置（如果有）
+                existing_config = {}
+                if api_config_path.exists():
+                    try:
+                        with open(api_config_path, 'r', encoding='utf-8') as f:
+                            existing_config = yaml.safe_load(f) or {}
+                    except:
+                        pass  # 如果读取失败，从空配置开始
+
+                # 只更新需要的字段，保留其他字段（如API密钥）
+                config_data = existing_config.copy()
+                config_data.update({
                     'wtfe_api_token': result.get("access_token"),
                     'wtfe_api_username': username,
                     'wtfe_api_url': 'https://wtfe.aozai.top'
-                }
+                })
+
                 with open(api_config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, allow_unicode=True)
                 print(f"✓ 登录信息已保存到 {api_config_path}")
