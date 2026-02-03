@@ -203,7 +203,7 @@ def handle_auth_command(args):
             result = client.create_api_key(name)
 
             # 保存API密钥到配置文件
-            api_key = result.get("api_key")
+            api_key = result.get("key")  # 服务端返回的字段名是"key"，不是"api_key"
             if api_key:
                 try:
                     with open(api_config_path, 'r', encoding='utf-8') as f:

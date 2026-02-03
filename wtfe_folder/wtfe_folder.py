@@ -87,11 +87,38 @@ class FolderAnalyzer:
     def _analyze_file(self, filepath: Path) -> FileFact:
         """Call wtfe_file to analyze a single file."""
         try:
+            # 安全验证
+            # 1. 验证文件在项目目录内
+            if not filepath.is_relative_to(self.folder_path):
+                raise ValueError(f"文件不在项目目录内: {filepath}")
+
+            # 2. 验证是普通文件
+            if not filepath.is_file():
+                raise ValueError(f"不是普通文件: {filepath}")
+
+            # 3. 验证文件名不含危险字符
+            filename = filepath.name
+            dangerous_chars = [';', '|', '&', '$', '`', '>', '<', '(', ')', '\n', '\r']
+            if any(c in filename for c in dangerous_chars):
+                raise ValueError(f"文件名包含危险字符: {filename}")
+
+            # 4. 使用绝对路径并再次验证
+            abs_path = filepath.resolve()
+            if not abs_path.is_relative_to(self.folder_path.resolve()):
+                raise ValueError(f"路径遍历检测: {filepath}")
+
+            # 5. 安全执行子进程
             result = subprocess.run(
-                [sys.executable, str(self.wtfe_file_script), str(filepath)],
+                [sys.executable, str(self.wtfe_file_script), str(abs_path)],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                cwd=self.wtfe_root,  # 设置工作目录
+                env={  # 安全环境变量
+                    'PATH': '/usr/bin:/bin',
+                    'PYTHONPATH': str(self.wtfe_root),
+                    'PYTHONUNBUFFERED': '1'
+                }
             )
             if result.returncode == 0:
                 data = json.loads(result.stdout)
